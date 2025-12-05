@@ -53,9 +53,10 @@ if not check_password():
 with st.sidebar:
     # 1. LOGO FIRMY
     # Jeśli wgrałeś plik logo.png, to się wyświetli. Jak nie - pokaże tekst.
-    if os.path.exists("logo.png"):
-        st.image("logo.png", use_container_width=True)
+  if os.path.exists("strategy_logo_black.svg"):
+        st.image("strategy_logo_black.svg", use_container_width=True)
     else:
+        # Fallback gdyby jednak plik się nie wgrał lub nazwa była inna
         st.header("🚀 YOUR COMPANY")
     
     st.divider()
