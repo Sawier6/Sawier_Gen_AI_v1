@@ -6,6 +6,7 @@ import re
 from PIL import Image
 import io
 import glob
+import requests # WYMAGANE do pobierania
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
@@ -49,6 +50,12 @@ st.markdown("""
         width: 100% !important;
         height: auto !important;
         display: block;
+    }
+    
+    /* Custom Warning/Disclaimer Styling */
+    .stAlert {
+        border-radius: 8px;
+        border: 1px solid #fa660f33;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -95,8 +102,6 @@ def get_mascot_refs(folder_name="mascot"):
              files.extend(glob.glob(os.path.join(folder_name, ext.upper())))
     
     if not files: return None
-    
-    # Compress and return without printing any message
     encoded_files = [compress_and_encode_image(f) for f in files]
     return [f for f in encoded_files if f is not None]
 
@@ -164,27 +169,22 @@ with st.sidebar:
     
     current_config = MODEL_CONFIG[model_name]
 
-    # 3. SETTINGS (Unified Aspect Ratio)
+    # 3. SETTINGS
     selected_size = None
     selected_ratio_val = None
 
-    # Logic: Show Aspect Ratio for Maxi OR Flux Txt
     if current_config["mode"] == "maxi_preset" or current_config["api_type"] == "flux_txt":
         ratio_alias = st.radio("Aspect Ratio", ["9:16", "1:1", "16:9"], index=2)
-        
-        # Mapping: Flux needs "landscape_16_9", Nano likes "16:9" usually, 
-        # but let's prepare both values just in case.
         if ratio_alias == "9:16":
-            selected_size = "portrait_16_9" # For Flux
-            selected_ratio_val = "9:16"     # For Nano
+            selected_size = "portrait_16_9" 
+            selected_ratio_val = "9:16"    
         elif ratio_alias == "1:1":
             selected_size = "square"
             selected_ratio_val = "1:1"
-        else: # 16:9
+        else: 
             selected_size = "landscape_16_9"
             selected_ratio_val = "16:9"
             
-    # For Manual Nano Edit -> still Resolution might be useful, or stick to Aspect
     elif current_config["api_type"] == "nano":
          selected_size = st.radio("Resolution", ["1K", "2K"], index=0)
     
@@ -196,7 +196,6 @@ with st.sidebar:
         mascot_refs = get_mascot_refs()
         if not mascot_refs:
              st.error("⚠️ Error: No images in '/mascot' folder.")
-        # SILENT MODE: No text printed here
 
     elif "edit" in current_config["mode"]:
         st.divider()
@@ -239,7 +238,8 @@ if generate_btn:
     elif current_config["mode"] == "maxi_preset" and not mascot_refs:
         st.error("Mascot generation failed: No references.")
     else:
-        with st.status("Processing...", expanded=True) as status:
+        # 1. STATUS BLOCK (Tylko procesowanie, zwinie się po zakończeniu)
+        with st.status("✨ Working on our strategic AI magic... Please wait.", expanded=True) as status:
             try:
                 os.environ["FAL_KEY"] = api_key
                 
@@ -251,54 +251,66 @@ if generate_btn:
                 }
 
                 # --- PAYLOAD BUILDER ---
-                
-                # 1. MAXI GENERATOR
                 if current_config["mode"] == "maxi_preset":
                     arguments["num_inference_steps"] = 4
                     arguments["guidance_scale"] = 0
-                    arguments["resolution"] = "1K" # Default quality
-                    # NEW: Explicit Aspect Ratio
+                    arguments["resolution"] = "1K"
                     arguments["aspect_ratio"] = selected_ratio_val 
                     arguments["image_urls"] = mascot_refs 
-
-                # 2. NANO BANANA MANUAL
                 elif current_config["api_type"] == "nano":
                     arguments["num_inference_steps"] = 4
                     arguments["guidance_scale"] = 0
                     arguments["resolution"] = selected_size
                     if uploaded_files:
                         arguments["image_urls"] = [compress_and_encode_image(f) for f in uploaded_files]
-
-                # 3. FLUX EDIT
                 elif current_config["api_type"] == "flux_edit":
                     if uploaded_files:
                         arguments["image_urls"] = [compress_and_encode_image(f) for f in uploaded_files]
-
-                # 4. FLUX TXT
                 else:
                     if selected_size: arguments["image_size"] = selected_size
                     if uploaded_files:
                         arguments["image_url"] = compress_and_encode_image(uploaded_files[0])
 
                 # --- SUBMIT ---
-                st.write(f"Sending request to {current_config['id']}...")
-                
-                handler = fal_client.submit(
-                    current_config["id"],
-                    arguments=arguments,
-                )
-                
+                handler = fal_client.submit(current_config["id"], arguments=arguments)
                 result = handler.get()
                 
-                if 'images' in result:
-                    img_url = result['images'][0]['url']
-                    status.update(label="Done!", state="complete", expanded=False)
-                    st.image(img_url, use_container_width=True)
-                    st.markdown(f"**[Download Image]({img_url})**")
-                else:
-                    st.error("API Error: No image returned.")
-                    if result: st.json(result)
-                    
+                # Zmieniamy status na gotowe i zamykamy go
+                status.update(label="✨ Strategic Magic Delivered!", state="complete", expanded=False)
+                
             except Exception as e:
                 status.update(label="Error", state="error")
                 st.error(f"Details: {e}")
+                result = None
+
+        # 2. WYNIK (Poza blokiem statusu - widoczny od razu!)
+        if result and 'images' in result:
+            img_url = result['images'][0]['url']
+            
+            # Obrazek na pełną szerokość kontenera
+            st.image(img_url, use_container_width=True)
+            
+            # Disclaimer
+            st.warning("⚠️ **Note:** If you like this result, please download it now. It will be overwritten when you generate a new image.")
+
+            # Pobieranie i przycisk
+            try:
+                response = requests.get(img_url)
+                response.raise_for_status()
+                img_data = response.content
+                
+                st.download_button(
+                    label="📥 Download High-Res Image",
+                    data=img_data,
+                    file_name="strategy_ai_generated.jpg",
+                    mime="image/jpeg",
+                    use_container_width=True
+                )
+            except Exception as download_err:
+                st.error(f"Could not prepare download: {download_err}")
+                st.markdown(f"[Backup Link]({img_url})")
+        
+        elif result:
+            # Fallback dla błędów API, które nie rzuciły exception
+            st.error("API Error: No image returned.")
+            st.json(result)
