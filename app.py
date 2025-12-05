@@ -57,7 +57,7 @@ with st.sidebar:
         st.image("strategy_logo_black.svg", use_container_width=True)
     else:
         # Fallback gdyby jednak plik się nie wgrał lub nazwa była inna
-        st.header("🚀 YOUR COMPANY")
+        st.header("🚀 YOUR COMPANY") 
     
     st.divider()
     
