@@ -7,6 +7,7 @@ from PIL import Image
 import io
 import glob
 import requests
+import time
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
@@ -16,16 +17,50 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS (Styling) ---
+# --- CSS (Styling, FONTS & GHOST MODE) ---
 st.markdown("""
     <style>
-    /* Button Styling */
+    /* 1. IMPORT CZCIONKI INTER */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+
+    /* 2. GLOBALNE USTAWIENIA TEKSTU (Inter, Biały, Medium/Regular) */
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+        color: #ffffff;
+        font-weight: 400; /* Regular */
+    }
+    
+    /* Pogrubienie dla labeli i mniejszych nagłówków */
+    label, .stMarkdown p, .stCaption {
+        font-weight: 500; /* Medium */
+    }
+
+    /* 3. TYTUŁY H1 (Maxi Generator itp.) - POMARAŃCZOWY BOLD */
+    h1 {
+        color: #fa660f !important;
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 700 !important; /* Bold */
+    }
+    
+    /* 4. UKRYWANIE ELEMENTÓW STREAMLIT (Ghost Mode) */
+    [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
+    [data-testid="stHeader"] {visibility: hidden !important; display: none !important;}
+    [data-testid="stDecoration"] {visibility: hidden !important; display: none !important;}
+    .stDeployButton {display:none !important;}
+    footer {visibility: hidden !important; display: none !important;}
+    #MainMenu {visibility: hidden !important; display: none !important;}
+    
+    .block-container {
+        padding-top: 2rem !important;
+    }
+
+    /* 5. STYLIZACJA PRZYCISKÓW */
     .stButton>button {
         background-color: #fa660f;
         color: white;
         border-radius: 8px;
         height: 3.5em;
-        font-weight: bold;
+        font-weight: bold; /* Inter Bold */
         border: none;
         transition: all 0.3s ease;
     }
@@ -35,12 +70,7 @@ st.markdown("""
         transform: scale(1.02);
     }
     
-    /* CLEAN INTERFACE */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    /* LOGO FIX */
+    /* 6. LOGO & OBRAZKI */
     .logo-container {
         max-width: 180px;
         width: 100%;
@@ -51,27 +81,26 @@ st.markdown("""
         height: auto !important;
         display: block;
     }
-    
-    /* Custom Warning Styling */
-    .stAlert {
-        border-radius: 8px;
-        border: 1px solid #fa660f33;
-    }
-    
-    /* --- NEW: RESULT IMAGE PREVIEW STYLING --- */
-    /* Kontener na wynikowy obrazek */
     .result-image-container {
         display: flex;
-        justify-content: center; /* Wyśrodkowanie */
+        justify-content: center;
         margin: 20px 0;
     }
-    /* Sam obrazek wewnątrz kontenera */
     .result-image-container img {
-        max-width: 850px; /* Ograniczenie szerokości wizualnej (Preview ~1K) */
-        width: 100%;      /* Responsywność na małych ekranach */
+        max-width: 850px;
+        width: 100%;
         height: auto;
-        border-radius: 12px; /* Ładne zaokrąglenie */
-        box-shadow: 0 6px 16px rgba(0,0,0,0.1); /* Delikatny cień */
+        border-radius: 12px;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    }
+    
+    /* Styl dla komunikatu o limicie (Caption pod tytułem) */
+    .limit-info {
+        color: #cccccc !important;
+        font-size: 0.9em;
+        margin-top: -15px;
+        margin-bottom: 20px;
+        font-weight: 400;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -122,24 +151,47 @@ def get_mascot_refs(folder_name="mascot"):
     return [f for f in encoded_files if f is not None]
 
 # --- AUTHENTICATION ---
-ACCESS_PASSWORD = st.secrets.get("APP_PASSWORD", os.environ.get("APP_PASSWORD", ""))
+ADMIN_PASS = st.secrets.get("ADMIN_PASSWORD", "")
+TEAM_PASS = st.secrets.get("TEAM_PASSWORD", "")
+
 def check_password():
-    if not ACCESS_PASSWORD: return True 
-    if "password_correct" not in st.session_state: st.session_state.password_correct = False
-    if st.session_state.password_correct: return True
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+        st.session_state.role = None
+
+    if st.session_state.authenticated:
+        return True
+
     col1, col2, col3 = st.columns([1,2,1])
     with col2:
         st.info("🔒 Login Required")
-        pwd = st.text_input("Password:", type="password")
-        if pwd == ACCESS_PASSWORD:
-            st.session_state.password_correct = True
-            st.rerun()
+        input_pass = st.text_input("Password:", type="password")
+        
+        if input_pass:
+            if input_pass == ADMIN_PASS:
+                st.session_state.authenticated = True
+                st.session_state.role = 'admin'
+                st.rerun()
+            elif input_pass == TEAM_PASS:
+                st.session_state.authenticated = True
+                st.session_state.role = 'user'
+                st.rerun()
+            else:
+                st.error("Incorrect password")
+    
     return False
-if not check_password(): st.stop()
 
-# --- SIDEBAR CONFIG ---
+if not check_password():
+    st.stop()
+
+# --- SIDEBAR ---
 with st.sidebar:
-    # 1. LOGO
+    # Sidebar Info
+    if st.session_state.role == 'admin':
+        st.success("Logged as: **Super Admin (Unlimited)**")
+    else:
+        st.info("Logged as: **Team Member**")
+
     logo_svg = process_svg_logo("strategy_logo_black.svg", "#fa660f")
     if logo_svg:
         st.markdown(f'<div class="logo-container">{logo_svg}</div>', unsafe_allow_html=True)
@@ -148,70 +200,42 @@ with st.sidebar:
 
     st.divider()
     
-    # 2. MODEL SELECTION
     model_name = st.selectbox(
         "Select Mode",
-        options=[
-            "Maxi Generator", 
-            "flux 2 flex",
-            "flux 2 flex edit",
-            "nano banana pro edit"
-        ]
+        options=["Maxi Generator", "flux 2 flex", "flux 2 flex edit", "nano banana pro edit"]
     )
     
-    # --- CONFIGURATION MAP ---
     MODEL_CONFIG = {
-        "Maxi Generator": {
-            "id": "fal-ai/nano-banana-pro/edit", 
-            "mode": "maxi_preset",
-            "api_type": "nano"
-        },
-        "flux 2 flex": {
-            "id": "fal-ai/flux-2-flex",
-            "mode": "text_to_image",
-            "api_type": "flux_txt"
-        },
-        "flux 2 flex edit": {
-            "id": "fal-ai/flux-2-flex/edit",
-            "mode": "image_edit",
-            "api_type": "flux_edit"
-        },
-        "nano banana pro edit": {
-            "id": "fal-ai/nano-banana-pro/edit",
-            "mode": "nano_edit",
-            "api_type": "nano"
-        }
+        "Maxi Generator": {"id": "fal-ai/nano-banana-pro/edit", "mode": "maxi_preset", "api_type": "nano"},
+        "flux 2 flex": {"id": "fal-ai/flux-2-flex", "mode": "text_to_image", "api_type": "flux_txt"},
+        "flux 2 flex edit": {"id": "fal-ai/flux-2-flex/edit", "mode": "image_edit", "api_type": "flux_edit"},
+        "nano banana pro edit": {"id": "fal-ai/nano-banana-pro/edit", "mode": "nano_edit", "api_type": "nano"}
     }
     
     current_config = MODEL_CONFIG[model_name]
 
-    # 3. SETTINGS
+    # Settings
     selected_size = None
     selected_ratio_val = None
 
     if current_config["mode"] == "maxi_preset" or current_config["api_type"] == "flux_txt":
         ratio_alias = st.radio("Aspect Ratio", ["9:16", "1:1", "16:9"], index=2)
         if ratio_alias == "9:16":
-            selected_size = "portrait_16_9" 
-            selected_ratio_val = "9:16"    
+            selected_size = "portrait_16_9"; selected_ratio_val = "9:16"    
         elif ratio_alias == "1:1":
-            selected_size = "square"
-            selected_ratio_val = "1:1"
+            selected_size = "square"; selected_ratio_val = "1:1"
         else: 
-            selected_size = "landscape_16_9"
-            selected_ratio_val = "16:9"
+            selected_size = "landscape_16_9"; selected_ratio_val = "16:9"
             
     elif current_config["api_type"] == "nano":
          selected_size = st.radio("Resolution", ["1K", "2K"], index=0)
     
-    # 4. DATA LOADING
     uploaded_files = []
     mascot_refs = []
     
     if current_config["mode"] == "maxi_preset":
         mascot_refs = get_mascot_refs()
-        if not mascot_refs:
-             st.error("⚠️ Error: No images in '/mascot' folder.")
+        if not mascot_refs: st.error("⚠️ Error: No images in '/mascot' folder.")
 
     elif "edit" in current_config["mode"]:
         st.divider()
@@ -232,6 +256,10 @@ if current_config["mode"] == "maxi_preset":
             st.write("🦡") 
     with col_head_txt:
         st.title("Maxi Generator")
+        # Wyświetlamy info o limicie TYLKO dla zwykłego usera
+        if st.session_state.role != 'admin':
+            st.markdown('<div class="limit-info">⚡ Team Access: Limited to 5 generations per hour.</div>', unsafe_allow_html=True)
+            
 else:
     st.title(model_name)
 
@@ -241,90 +269,117 @@ col1, col2 = st.columns([1, 4])
 with col1:
     generate_btn = st.button("RUN", use_container_width=True)
 
-# --- GENERATION ENGINE ---
-if generate_btn:
-    api_key = st.secrets.get("FAL_KEY")
+# --- QUOTA SYSTEM (5 PER HOUR) ---
+HOURLY_LIMIT = 5
+WINDOW_SECONDS = 3600
+
+def check_quota():
+    if st.session_state.role == 'admin': return True
     
-    if not api_key:
-        st.error("Missing FAL_KEY.")
-    elif not prompt:
-        st.warning("Prompt is required.")
-    elif "edit" in current_config["mode"] and current_config["mode"] != "maxi_preset" and not uploaded_files:
-        st.error("Upload an image to start editing.")
-    elif current_config["mode"] == "maxi_preset" and not mascot_refs:
-        st.error("Mascot generation failed: No references.")
-    else:
-        # STATUS BLOCK
-        with st.status("✨ Working on our strategic AI magic... Please wait.", expanded=True) as status:
-            try:
-                os.environ["FAL_KEY"] = api_key
-                
-                arguments = {
-                    "prompt": prompt,
-                    "num_inference_steps": 28,
-                    "guidance_scale": 3.5,
-                    "safety_tolerance": "2"
-                }
+    if 'gen_count' not in st.session_state:
+        st.session_state.gen_count = 0
+        st.session_state.first_gen_time = time.time()
+    
+    now = time.time()
+    elapsed = now - st.session_state.first_gen_time
+    
+    if elapsed > WINDOW_SECONDS:
+        st.session_state.gen_count = 0
+        st.session_state.first_gen_time = now
+        elapsed = 0
+    
+    if st.session_state.gen_count >= HOURLY_LIMIT:
+        wait_min = int((WINDOW_SECONDS - elapsed) / 60)
+        st.error(f"⛔ **Hourly Limit Reached ({HOURLY_LIMIT}/hour).** Please wait {wait_min} minutes for limit reset.")
+        return False
+    return True
 
-                # --- PAYLOAD BUILDER ---
-                if current_config["mode"] == "maxi_preset":
-                    arguments["num_inference_steps"] = 4
-                    arguments["guidance_scale"] = 0
-                    arguments["resolution"] = "2K" # FORCE HIGH QUALITY
-                    arguments["aspect_ratio"] = selected_ratio_val 
-                    arguments["image_urls"] = mascot_refs 
-                
-                elif current_config["api_type"] == "nano":
-                    arguments["num_inference_steps"] = 4
-                    arguments["guidance_scale"] = 0
-                    arguments["resolution"] = selected_size
-                    if uploaded_files:
-                        arguments["image_urls"] = [compress_and_encode_image(f) for f in uploaded_files]
-                elif current_config["api_type"] == "flux_edit":
-                    if uploaded_files:
-                        arguments["image_urls"] = [compress_and_encode_image(f) for f in uploaded_files]
-                else:
-                    if selected_size: arguments["image_size"] = selected_size
-                    if uploaded_files:
-                        arguments["image_url"] = compress_and_encode_image(uploaded_files[0])
+def increment_quota():
+    if st.session_state.role != 'admin':
+        if 'gen_count' not in st.session_state: st.session_state.gen_count = 0
+        st.session_state.gen_count += 1
 
-                # --- SUBMIT ---
-                handler = fal_client.submit(current_config["id"], arguments=arguments)
-                result = handler.get()
-                
-                status.update(label="✨ Strategic Magic Delivered!", state="complete", expanded=False)
-                
-            except Exception as e:
-                status.update(label="Error", state="error")
-                st.error(f"Details: {e}")
-                result = None
-
-        # WYNIK POZA STATUSEM (Z NOWYM STYLEM)
-        if result and 'images' in result:
-            img_url = result['images'][0]['url']
-            
-            # UŻYWAMY HTML/CSS ZAMIAST st.image DO WYŚWIETLANIA PREVIEW
-            st.markdown(f'<div class="result-image-container"><img src="{img_url}"></div>', unsafe_allow_html=True)
-            
-            st.warning("⚠️ **Note:** If you like this result, please download it now. It will be overwritten when you generate a new image.")
-
-            try:
-                # POBIERAMY PEŁNĄ ROZDZIELCZOŚĆ DLA PRZYCISKU
-                response = requests.get(img_url)
-                response.raise_for_status()
-                img_data = response.content
-                
-                st.download_button(
-                    label="📥 Download High-Res Image (2K)",
-                    data=img_data,
-                    file_name="strategy_ai_generated.jpg",
-                    mime="image/jpeg",
-                    use_container_width=True
-                )
-            except Exception as download_err:
-                st.error(f"Could not prepare download: {download_err}")
-                st.markdown(f"[Backup Link]({img_url})")
+# --- EXECUTION ---
+if generate_btn:
+    
+    if check_quota():
+        api_key = st.secrets.get("FAL_KEY")
         
-        elif result:
-            st.error("API Error: No image returned.")
-            st.json(result)
+        if not api_key:
+            st.error("Missing FAL_KEY.")
+        elif not prompt:
+            st.warning("Prompt is required.")
+        elif "edit" in current_config["mode"] and current_config["mode"] != "maxi_preset" and not uploaded_files:
+            st.error("Upload an image to start editing.")
+        elif current_config["mode"] == "maxi_preset" and not mascot_refs:
+            st.error("Mascot generation failed: No references.")
+        else:
+            with st.status("✨ Working on our strategic AI magic... Please wait.", expanded=True) as status:
+                try:
+                    os.environ["FAL_KEY"] = api_key
+                    
+                    arguments = {
+                        "prompt": prompt,
+                        "num_inference_steps": 28,
+                        "guidance_scale": 3.5,
+                        "safety_tolerance": "2"
+                    }
+
+                    if current_config["mode"] == "maxi_preset":
+                        arguments["num_inference_steps"] = 4
+                        arguments["guidance_scale"] = 0
+                        arguments["resolution"] = "2K"
+                        arguments["aspect_ratio"] = selected_ratio_val 
+                        arguments["image_urls"] = mascot_refs 
+                    
+                    elif current_config["api_type"] == "nano":
+                        arguments["num_inference_steps"] = 4
+                        arguments["guidance_scale"] = 0
+                        arguments["resolution"] = selected_size
+                        if uploaded_files:
+                            arguments["image_urls"] = [compress_and_encode_image(f) for f in uploaded_files]
+                    elif current_config["api_type"] == "flux_edit":
+                        if uploaded_files:
+                            arguments["image_urls"] = [compress_and_encode_image(f) for f in uploaded_files]
+                    else:
+                        if selected_size: arguments["image_size"] = selected_size
+                        if uploaded_files:
+                            arguments["image_url"] = compress_and_encode_image(uploaded_files[0])
+
+                    handler = fal_client.submit(current_config["id"], arguments=arguments)
+                    result = handler.get()
+                    
+                    status.update(label="✨ Strategic Magic Delivered!", state="complete", expanded=False)
+                    increment_quota() 
+                    
+                except Exception as e:
+                    status.update(label="Error", state="error")
+                    st.error(f"Details: {e}")
+                    result = None
+
+            if result and 'images' in result:
+                img_url = result['images'][0]['url']
+                
+                st.markdown(f'<div class="result-image-container"><img src="{img_url}"></div>', unsafe_allow_html=True)
+                
+                st.warning("⚠️ **Note:** If you like this result, please download it now. It will be overwritten when you generate a new image.")
+
+                try:
+                    response = requests.get(img_url)
+                    response.raise_for_status()
+                    img_data = response.content
+                    
+                    st.download_button(
+                        label="📥 Download High-Res Image (2K)",
+                        data=img_data,
+                        file_name="strategy_ai_generated.jpg",
+                        mime="image/jpeg",
+                        use_container_width=True
+                    )
+                except Exception as download_err:
+                    st.error(f"Could not prepare download: {download_err}")
+                    st.markdown(f"[Backup Link]({img_url})")
+            
+            elif result:
+                st.error("API Error: No image returned.")
+                st.json(result)
