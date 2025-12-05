@@ -2,103 +2,152 @@ import streamlit as st
 import fal_client
 import os
 
-# --- KONFIGURACJA STRONY ---
-st.set_page_config(page_title="Firmowy Generator AI", page_icon="✨", layout="centered")
+# --- PAGE CONFIGURATION ---
+st.set_page_config(
+    page_title="AI Creative Studio",
+    page_icon="🎨",
+    layout="wide" # Zmieniłem na wide, żeby mieć więcej miejsca
+)
 
-# --- PROSTE HASŁO (DLA BEZPIECZEŃSTWA W FIRMIE) ---
-# Ustaw hasło w "Secrets" na serwerze lub wpisz je tutaj na sztywno (mniej bezpieczne)
-ACCESS_PASSWORD = os.environ.get("APP_PASSWORD", "firma123") 
+# --- CUSTOM CSS (Styling) ---
+# To usuwa stopkę "Made with Streamlit" i poprawia wygląd
+st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stButton>button {
+        width: 100%;
+        border-radius: 10px;
+        height: 3em;
+        font-weight: bold;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- PASSWORD PROTECTION ---
+ACCESS_PASSWORD = st.secrets.get("APP_PASSWORD", os.environ.get("APP_PASSWORD", "admin123"))
 
 def check_password():
-    """Zwraca True, jeśli użytkownik wpisał poprawne hasło."""
     if "password_correct" not in st.session_state:
         st.session_state.password_correct = False
-
+    
     if st.session_state.password_correct:
         return True
-
-    st.text_input("🔑 Podaj hasło dostępu:", type="password", key="password_input", on_change=password_entered)
+    
+    # Proste i ładne okno logowania
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        st.header("🔒 Login Required")
+        pwd = st.text_input("Enter Access Password:", type="password")
+        if pwd == ACCESS_PASSWORD:
+            st.session_state.password_correct = True
+            st.rerun()
+        elif pwd:
+            st.error("Incorrect password")
     return False
 
-def password_entered():
-    if st.session_state["password_input"] == ACCESS_PASSWORD:
-        st.session_state.password_correct = True
-        del st.session_state["password_input"]
-    else:
-        st.error("Błędne hasło.")
-
 if not check_password():
-    st.stop()  # Zatrzymaj aplikację, jeśli hasło nie zostało podane
+    st.stop()
 
-# --- GŁÓWNA APLIKACJA (Widoczna po wpisaniu hasła) ---
-
-# Nagłówek
-st.title("✨ Nasz Firmowy Kreator")
-st.markdown("Wpisz prompt, wybierz format i wygeneruj obraz na koszt firmy.")
-
-# Panel boczny (Ustawienia)
+# --- SIDEBAR (Settings & Logo) ---
 with st.sidebar:
-    st.header("⚙️ Parametry")
-    
-    # Wybór modelu (możesz tu dodać inne modele z Fal.ai)
-    model_choice = st.selectbox(
-        "Model AI", 
-        ["fal-ai/flux/dev", "fal-ai/flux/schnell"], 
-        index=0
-    )
-    
-    aspect_ratio = st.selectbox(
-        "Format obrazu",
-        options=["square_hd", "square", "portrait_4_3", "portrait_16_9", "landscape_16_9"],
-        index=4
-    )
-    
-    guidance = st.slider("Kreatywność (Guidance Scale)", 1.0, 10.0, 3.5)
-    
-    # Pobranie klucza API z sekretów serwera
-    api_key = st.secrets.get("FAL_KEY")
-
-# Główny formularz
-prompt = st.text_area("Opis obrazka (Prompt):", height=120, placeholder="Np. nowoczesne biurowiec ze szkła i stali, słoneczny dzień, styl fotorealistyczny...")
-
-col1, col2 = st.columns([1, 2])
-with col1:
-    generate_btn = st.button("🚀 Generuj", type="primary", use_container_width=True)
-
-# Logika generowania
-if generate_btn:
-    if not api_key:
-        st.error("❌ Błąd konfiguracji: Brak klucza API w systemie.")
-    elif not prompt:
-        st.warning("⚠️ Wpisz opis obrazka.")
+    # 1. LOGO FIRMY
+    # Jeśli wgrałeś plik logo.png, to się wyświetli. Jak nie - pokaże tekst.
+    if os.path.exists("logo.png"):
+        st.image("logo.png", use_container_width=True)
     else:
-        with st.spinner('⏳ AI przetwarza... (to potrwa ok. 3-5 sekund)'):
+        st.header("🚀 YOUR COMPANY")
+    
+    st.divider()
+    
+    st.subheader("⚙️ Configuration")
+    
+    # 2. WIĘCEJ MODELI
+    model_name = st.selectbox(
+        "Select AI Model",
+        options=[
+            "fal-ai/flux/dev",
+            "fal-ai/flux/schnell",
+            "fal-ai/flux-pro/v1.1", # Ultra quality (może być droższy)
+            "fal-ai/auraflow"       # Alternatywa
+        ],
+        format_func=lambda x: {
+            "fal-ai/flux/dev": "Flux Dev (Balanced - Recommended)",
+            "fal-ai/flux/schnell": "Flux Schnell (Super Fast)",
+            "fal-ai/flux-pro/v1.1": "Flux Pro 1.1 (Ultra Realism)",
+            "fal-ai/auraflow": "AuraFlow (Creative)"
+        }.get(x, x)
+    )
+    
+    # 3. FORMAT OBRAZU
+    aspect_ratio = st.selectbox(
+        "Aspect Ratio",
+        options=["square_hd", "square", "portrait_4_3", "portrait_16_9", "landscape_16_9", "landscape_21_9"],
+        index=4,
+        format_func=lambda x: x.replace("_", " ").title()
+    )
+
+    # 4. ZAAWANSOWANE (Ukryte w rozwijanym menu)
+    with st.expander("Advanced Settings"):
+        guidance = st.slider("Guidance Scale (Creativity)", 1.0, 10.0, 3.5)
+        steps = st.slider("Inference Steps", 10, 50, 28)
+        safety_checker = st.checkbox("Enable Safety Checker", value=True)
+
+    st.divider()
+    st.caption("Internal Tool v2.0")
+
+# --- MAIN AREA ---
+st.title("✨ AI Image Generator")
+st.markdown("Create stunning visuals for your projects in seconds.")
+
+# Input Area
+prompt = st.text_area("Describe your image...", height=150, placeholder="Example: A futuristic glass office building in downtown Warsaw, golden hour light, photorealistic 8k...")
+
+# Generate Button (Central and Big)
+col1, col2, col3 = st.columns([1, 1, 1])
+with col2:
+    generate_btn = st.button("✨ GENERATE IMAGE", type="primary")
+
+# --- GENERATION LOGIC ---
+if generate_btn:
+    api_key = st.secrets.get("FAL_KEY")
+    
+    if not api_key:
+        st.error("❌ Configuration Error: FAL_KEY missing in secrets.")
+    elif not prompt:
+        st.warning("⚠️ Please enter a prompt description.")
+    else:
+        # Placeholder na czas generowania
+        with st.status("🤖 AI is working...", expanded=True) as status:
             try:
+                st.write("Connecting to GPU cluster...")
                 os.environ["FAL_KEY"] = api_key
                 
-                # Wywołanie API Fal.ai
                 handler = fal_client.submit(
-                    model_choice,
+                    model_name,
                     arguments={
                         "prompt": prompt,
                         "image_size": aspect_ratio,
                         "guidance_scale": guidance,
-                        "num_inference_steps": 28,  # Dla Flux Dev
-                        "enable_safety_checker": True # Bezpieczeństwo w korpo
+                        "num_inference_steps": steps,
+                        "enable_safety_checker": safety_checker,
+                        "safety_tolerance": "2" # Mniej restrykcyjny
                     },
                 )
                 
+                st.write("Rendering image...")
                 result = handler.get()
                 image_url = result['images'][0]['url']
                 
-                st.image(image_url, caption=f"Prompt: {prompt}", use_column_width=True)
+                status.update(label="✅ Generation Complete!", state="complete", expanded=False)
                 
-                # Przycisk pobierania (Streamlit nie pobiera bezpośrednio, ale dajemy link)
-                st.markdown(f"[📥 Kliknij tutaj, aby pobrać w pełnej jakości]({image_url})")
-                st.success("Gotowe!")
+                # Wyświetlanie wyniku
+                st.image(image_url, use_container_width=True)
+                
+                # Sekcja pobierania
+                st.success("Your image is ready!")
+                st.markdown(f"**[📥 Download High Resolution Image]({image_url})**")
                 
             except Exception as e:
-                st.error(f"Wystąpił błąd: {e}")
-
-st.markdown("---")
-st.caption("Internal Tool | Powered by Fal.ai Flux")
+                status.update(label="❌ Error", state="error")
+                st.error(f"Something went wrong: {e}")
