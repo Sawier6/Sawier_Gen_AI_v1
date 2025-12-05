@@ -50,19 +50,12 @@ st.markdown("""
         height: auto !important;
         display: block;
     }
-    
-    /* MAXI HEADER STYLING */
-    .maxi-header-img {
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
     </style>
 """, unsafe_allow_html=True)
 
 # --- HELPER FUNCTIONS ---
 
 def process_svg_logo(file_path, new_color="#fa660f"):
-    """Loads SVG and changes color."""
     try:
         with open(file_path, "r") as f:
             svg_content = f.read()
@@ -74,38 +67,25 @@ def process_svg_logo(file_path, new_color="#fa660f"):
         return None
 
 def compress_and_encode_image(image_source, max_size=1024, quality=80):
-    """
-    CRITICAL FIX: Resizes and compresses images before sending to API
-    to avoid 'Request body size exceeded' error.
-    Accepts either a file path (str) or a file object (BytesIO).
-    """
     try:
-        # Load image based on type
-        if isinstance(image_source, str): # It's a path
+        if isinstance(image_source, str):
             if not os.path.exists(image_source): return None
             img = Image.open(image_source)
-        else: # It's a file object from uploader
+        else:
             img = Image.open(image_source)
 
-        # Convert to RGB (fixes issues with PNG transparency saving as JPEG)
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
 
-        # Resize if larger than max_size (keeps aspect ratio)
         img.thumbnail((max_size, max_size))
-
-        # Save to buffer with compression
         buffer = io.BytesIO()
         img.save(buffer, format="JPEG", quality=quality)
-        
-        # Encode
         return "data:image/jpeg;base64," + base64.b64encode(buffer.getvalue()).decode('utf-8')
     except Exception as e:
         st.error(f"Compression error: {e}")
         return None
 
 def get_mascot_refs(folder_name="mascot"):
-    """Loads and COMPRESSES all valid image files from the mascot folder."""
     extensions = ['*.jpg', '*.jpeg', '*.png']
     files = []
     if os.path.exists(folder_name):
@@ -116,9 +96,8 @@ def get_mascot_refs(folder_name="mascot"):
     
     if not files: return None
     
-    # Use the new compressor function
+    # Compress and return without printing any message
     encoded_files = [compress_and_encode_image(f) for f in files]
-    # Filter out any Nones in case of error
     return [f for f in encoded_files if f is not None]
 
 # --- AUTHENTICATION ---
@@ -152,7 +131,7 @@ with st.sidebar:
     model_name = st.selectbox(
         "Select Mode",
         options=[
-            "Maxi Generator", # SKRÓCONA NAZWA
+            "Maxi Generator", 
             "flux 2 flex",
             "flux 2 flex edit",
             "nano banana pro edit"
@@ -185,14 +164,29 @@ with st.sidebar:
     
     current_config = MODEL_CONFIG[model_name]
 
-    # 3. SETTINGS
+    # 3. SETTINGS (Unified Aspect Ratio)
     selected_size = None
-    if current_config["api_type"] == "flux_txt":
+    selected_ratio_val = None
+
+    # Logic: Show Aspect Ratio for Maxi OR Flux Txt
+    if current_config["mode"] == "maxi_preset" or current_config["api_type"] == "flux_txt":
         ratio_alias = st.radio("Aspect Ratio", ["9:16", "1:1", "16:9"], index=2)
-        ratio_map = {"9:16": "portrait_16_9", "1:1": "square", "16:9": "landscape_16_9"}
-        selected_size = ratio_map[ratio_alias]
+        
+        # Mapping: Flux needs "landscape_16_9", Nano likes "16:9" usually, 
+        # but let's prepare both values just in case.
+        if ratio_alias == "9:16":
+            selected_size = "portrait_16_9" # For Flux
+            selected_ratio_val = "9:16"     # For Nano
+        elif ratio_alias == "1:1":
+            selected_size = "square"
+            selected_ratio_val = "1:1"
+        else: # 16:9
+            selected_size = "landscape_16_9"
+            selected_ratio_val = "16:9"
+            
+    # For Manual Nano Edit -> still Resolution might be useful, or stick to Aspect
     elif current_config["api_type"] == "nano":
-        selected_size = st.radio("Resolution", ["1K", "2K"], index=0)
+         selected_size = st.radio("Resolution", ["1K", "2K"], index=0)
     
     # 4. DATA LOADING
     uploaded_files = []
@@ -202,8 +196,7 @@ with st.sidebar:
         mascot_refs = get_mascot_refs()
         if not mascot_refs:
              st.error("⚠️ Error: No images in '/mascot' folder.")
-        else:
-             st.caption(f"Loaded {len(mascot_refs)} reference images.")
+        # SILENT MODE: No text printed here
 
     elif "edit" in current_config["mode"]:
         st.divider()
@@ -215,20 +208,15 @@ with st.sidebar:
 
 # --- MAIN AREA ---
 
-# NEW HEADER LOGIC
 if current_config["mode"] == "maxi_preset":
-    # Layout: Kolumna na obrazek (wąska) | Kolumna na tytuł (szeroka)
     col_head_img, col_head_txt = st.columns([1, 6])
-    
     with col_head_img:
         if os.path.exists("maxi_head.png"):
             st.image("maxi_head.png", use_container_width=True)
         else:
-            st.warning("No icon") # Fallback if file missing
-            
+            st.write("🦡") 
     with col_head_txt:
         st.title("Maxi Generator")
-        # SUBHEADLINE USUNIĘTY
 else:
     st.title(model_name)
 
@@ -268,8 +256,9 @@ if generate_btn:
                 if current_config["mode"] == "maxi_preset":
                     arguments["num_inference_steps"] = 4
                     arguments["guidance_scale"] = 0
-                    arguments["resolution"] = selected_size if selected_size else "1K"
-                    # Refs are already compressed via get_mascot_refs()
+                    arguments["resolution"] = "1K" # Default quality
+                    # NEW: Explicit Aspect Ratio
+                    arguments["aspect_ratio"] = selected_ratio_val 
                     arguments["image_urls"] = mascot_refs 
 
                 # 2. NANO BANANA MANUAL
@@ -278,7 +267,6 @@ if generate_btn:
                     arguments["guidance_scale"] = 0
                     arguments["resolution"] = selected_size
                     if uploaded_files:
-                        # Compress uploads too!
                         arguments["image_urls"] = [compress_and_encode_image(f) for f in uploaded_files]
 
                 # 3. FLUX EDIT
