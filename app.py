@@ -1,154 +1,215 @@
 import streamlit as st
 import fal_client
 import os
+import base64
+import re
 
-# --- PAGE CONFIGURATION ---
+# --- KONFIGURACJA STRONY ---
 st.set_page_config(
-    page_title="AI Creative Studio",
-    page_icon="🎨",
-    layout="wide" # Zmieniłem na wide, żeby mieć więcej miejsca
+    page_title="AI Creative Studio Pro",
+    page_icon="🍊",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# --- CUSTOM CSS (Styling) ---
-# To usuwa stopkę "Made with Streamlit" i poprawia wygląd
+# --- CSS (Styling) ---
 st.markdown("""
     <style>
+    .stButton>button {
+        background-color: #fa660f;
+        color: white;
+        border-radius: 8px;
+        height: 3.5em;
+        font-weight: bold;
+        border: none;
+    }
+    .stButton>button:hover {
+        background-color: #d9550a;
+        color: white;
+    }
+    /* Ukrycie stopki Streamlit */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    .stButton>button {
-        width: 100%;
-        border-radius: 10px;
-        height: 3em;
-        font-weight: bold;
-    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- PASSWORD PROTECTION ---
-ACCESS_PASSWORD = st.secrets.get("APP_PASSWORD", os.environ.get("APP_PASSWORD", "admin123"))
+# --- FUNKCJE POMOCNICZE ---
+
+def load_and_color_svg(file_path, new_color="#fa660f"):
+    """Wczytuje SVG i zmienia kolor czarny na wybrany."""
+    try:
+        with open(file_path, "r") as f:
+            svg_content = f.read()
+        
+        # Prosta zamiana kolorów (zamienia black i hex #000000)
+        # Możesz dodać więcej wariantów, jeśli logo ma inne odcienie
+        svg_content = re.sub(r'fill="[^"]*"', f'fill="{new_color}"', svg_content)
+        svg_content = svg_content.replace("black", new_color)
+        svg_content = svg_content.replace("#000000", new_color)
+        svg_content = svg_content.replace("#000", new_color)
+        
+        return svg_content
+    except Exception as e:
+        return None
+
+def encode_image(uploaded_file):
+    """Zamienia wgrany plik na format zrozumiały dla API (base64)."""
+    if uploaded_file is not None:
+        bytes_data = uploaded_file.getvalue()
+        base64_str = base64.b64encode(bytes_data).decode('utf-8')
+        return f"data:image/jpeg;base64,{base64_str}"
+    return None
+
+# --- ZABEZPIECZENIE HASŁEM ---
+ACCESS_PASSWORD = st.secrets.get("APP_PASSWORD", os.environ.get("APP_PASSWORD", ""))
 
 def check_password():
+    """Prosty mechanizm logowania."""
+    if not ACCESS_PASSWORD:
+        return True # Jeśli hasło nie ustawione, wpuszczamy wszystkich
+        
     if "password_correct" not in st.session_state:
         st.session_state.password_correct = False
     
     if st.session_state.password_correct:
         return True
     
-    # Proste i ładne okno logowania
     col1, col2, col3 = st.columns([1,2,1])
     with col2:
-        st.header("🔒 Login Required")
-        pwd = st.text_input("Enter Access Password:", type="password")
+        st.info("🔒 Aplikacja chroniona hasłem")
+        pwd = st.text_input("Podaj hasło:", type="password")
         if pwd == ACCESS_PASSWORD:
             st.session_state.password_correct = True
             st.rerun()
         elif pwd:
-            st.error("Incorrect password")
+            st.error("Błędne hasło")
     return False
 
 if not check_password():
     st.stop()
 
-# --- SIDEBAR (Settings & Logo) ---
+# --- SIDEBAR (Ustawienia) ---
 with st.sidebar:
-    # 1. LOGO FIRMY
-    # Jeśli wgrałeś plik logo.png, to się wyświetli. Jak nie - pokaże tekst.
-  if os.path.exists("strategy_logo_black.svg"):
-        st.image("strategy_logo_black.svg", use_container_width=True)
+    # 1. LOGO ZMIENIONE NA POMARAŃCZOWO
+    logo_svg = load_and_color_svg("strategy_logo_black.svg", "#fa660f")
+    if logo_svg:
+        # Renderujemy SVG jako HTML
+        st.markdown(f'<div style="max-width: 200px; margin-bottom: 20px;">{logo_svg}</div>', unsafe_allow_html=True)
     else:
-        # Fallback gdyby jednak plik się nie wgrał lub nazwa była inna
-        st.header("🚀 YOUR COMPANY") 
-    
-    st.divider()
-    
-    st.subheader("⚙️ Configuration")
-    
-    # 2. WIĘCEJ MODELI
-    model_name = st.selectbox(
-        "Select AI Model",
-        options=[
-            "fal-ai/flux/dev",
-            "fal-ai/flux/schnell",
-            "fal-ai/flux-pro/v1.1", # Ultra quality (może być droższy)
-            "fal-ai/auraflow"       # Alternatywa
-        ],
-        format_func=lambda x: {
-            "fal-ai/flux/dev": "Flux Dev (Balanced - Recommended)",
-            "fal-ai/flux/schnell": "Flux Schnell (Super Fast)",
-            "fal-ai/flux-pro/v1.1": "Flux Pro 1.1 (Ultra Realism)",
-            "fal-ai/auraflow": "AuraFlow (Creative)"
-        }.get(x, x)
-    )
-    
-    # 3. FORMAT OBRAZU
-    aspect_ratio = st.selectbox(
-        "Aspect Ratio",
-        options=["square_hd", "square", "portrait_4_3", "portrait_16_9", "landscape_16_9", "landscape_21_9"],
-        index=4,
-        format_func=lambda x: x.replace("_", " ").title()
-    )
-
-    # 4. ZAAWANSOWANE (Ukryte w rozwijanym menu)
-    with st.expander("Advanced Settings"):
-        guidance = st.slider("Guidance Scale (Creativity)", 1.0, 10.0, 3.5)
-        steps = st.slider("Inference Steps", 10, 50, 28)
-        safety_checker = st.checkbox("Enable Safety Checker", value=True)
+        st.header("🍊 YOUR BRAND")
 
     st.divider()
-    st.caption("Internal Tool v2.0")
+    st.subheader("⚙️ Ustawienia Modelu")
 
-# --- MAIN AREA ---
-st.title("✨ AI Image Generator")
-st.markdown("Create stunning visuals for your projects in seconds.")
+    # 2. WYBÓR MODELI (Flux 2 = Pro 1.1)
+    model_alias = st.selectbox(
+        "Wybierz Model",
+        options=["Flux 1.1 Pro (Najlepsza jakość)", "Flux Dev (Standard)", "Nano Banana Pro (Szybki)"],
+        index=0
+    )
+    
+    # Mapowanie nazw na prawdziwe ID modeli z fal.ai
+    model_map = {
+        "Flux 1.1 Pro (Najlepsza jakość)": "fal-ai/flux-pro/v1.1",
+        "Flux Dev (Standard)": "fal-ai/flux/dev",
+        # Uwaga: Nano Banana Pro to nazwa wymyślona, podpinam tu szybki model SDXL jako przykład
+        "Nano Banana Pro (Szybki)": "fal-ai/fast-lightning-sdxl" 
+    }
+    selected_model_id = model_map[model_alias]
 
-# Input Area
-prompt = st.text_area("Describe your image...", height=150, placeholder="Example: A futuristic glass office building in downtown Warsaw, golden hour light, photorealistic 8k...")
+    # 3. ASPECT RATIO (9x16, 1x1, 16x9)
+    ratio_alias = st.radio(
+        "Proporcje obrazu",
+        options=["9:16 (Story)", "1:1 (Kwadrat)", "16:9 (Poziom)"],
+        index=2
+    )
+    
+    ratio_map = {
+        "9:16 (Story)": "portrait_16_9", # Fal używa takiej nomenklatury dla pionu
+        "1:1 (Kwadrat)": "square",
+        "16:9 (Poziom)": "landscape_16_9"
+    }
+    selected_ratio = ratio_map[ratio_alias]
 
-# Generate Button (Central and Big)
-col1, col2, col3 = st.columns([1, 1, 1])
-with col2:
-    generate_btn = st.button("✨ GENERATE IMAGE", type="primary")
+    # 4. REFERENCE IMAGES (Do 6 plików)
+    st.divider()
+    st.subheader("🖼️ Reference Images")
+    uploaded_refs = st.file_uploader(
+        "Wgraj zdjęcia referencyjne (max 6)", 
+        accept_multiple_files=True,
+        type=['png', 'jpg', 'jpeg']
+    )
+    
+    if uploaded_refs and len(uploaded_refs) > 6:
+        st.warning("⚠️ Maksymalnie 6 plików! Użyję tylko pierwszych 6.")
+        uploaded_refs = uploaded_refs[:6]
 
-# --- GENERATION LOGIC ---
+# --- GŁÓWNA STRONA ---
+st.title("✨ Generator AI")
+st.caption(f"Wybrany model: {model_alias}")
+
+# Pole promptu
+prompt = st.text_area("Opisz co chcesz wygenerować:", height=120, placeholder="Np. Futurystyczny samochód sportowy w kolorze pomarańczowym, kinowe oświetlenie...")
+
+col1, col2 = st.columns([1, 3])
+with col1:
+    generate_btn = st.button("🚀 GENERUJ", use_container_width=True)
+
+# --- LOGIKA GENEROWANIA ---
 if generate_btn:
     api_key = st.secrets.get("FAL_KEY")
     
     if not api_key:
-        st.error("❌ Configuration Error: FAL_KEY missing in secrets.")
+        st.error("Błąd: Brak klucza API w sekcji Secrets.")
     elif not prompt:
-        st.warning("⚠️ Please enter a prompt description.")
+        st.warning("Wpisz opis obrazka.")
     else:
-        # Placeholder na czas generowania
-        with st.status("🤖 AI is working...", expanded=True) as status:
+        with st.status("🍊 AI pracuje...", expanded=True) as status:
             try:
-                st.write("Connecting to GPU cluster...")
                 os.environ["FAL_KEY"] = api_key
                 
+                # Przygotowanie argumentów
+                arguments = {
+                    "prompt": prompt,
+                    "image_size": selected_ratio,
+                    "num_inference_steps": 28,
+                    "guidance_scale": 3.5,
+                    "safety_tolerance": "2"
+                }
+
+                # Obsługa Reference Images (Image-to-Image)
+                # WAŻNE: Standardowe API Flux obsługuje zazwyczaj 1 obraz jako input (img2img).
+                # Jeśli wgrano zdjęcia, dodajemy PIERWSZE jako image_url.
+                if uploaded_refs:
+                    st.write(f"Przetwarzanie {len(uploaded_refs)} zdjęć referencyjnych...")
+                    main_ref_image = encode_image(uploaded_refs[0])
+                    arguments["image_url"] = main_ref_image
+                    arguments["strength"] = 0.75 # Siła wpływu zdjęcia (do dostosowania)
+                    
+                    # Jeśli używasz modelu Dev, przełączamy na img2img endpoint (często wymagane)
+                    if "dev" in selected_model_id:
+                        selected_model_id = "fal-ai/flux/dev/image-to-image"
+                        
+                    st.info("ℹ️ Używam pierwszego zdjęcia jako głównego odniesienia (Standard API Limit).")
+
+                st.write("Wysyłanie do klastra GPU...")
+                
                 handler = fal_client.submit(
-                    model_name,
-                    arguments={
-                        "prompt": prompt,
-                        "image_size": aspect_ratio,
-                        "guidance_scale": guidance,
-                        "num_inference_steps": steps,
-                        "enable_safety_checker": safety_checker,
-                        "safety_tolerance": "2" # Mniej restrykcyjny
-                    },
+                    selected_model_id,
+                    arguments=arguments,
                 )
                 
-                st.write("Rendering image...")
                 result = handler.get()
                 image_url = result['images'][0]['url']
                 
-                status.update(label="✅ Generation Complete!", state="complete", expanded=False)
+                status.update(label="✅ Gotowe!", state="complete", expanded=False)
                 
-                # Wyświetlanie wyniku
                 st.image(image_url, use_container_width=True)
-                
-                # Sekcja pobierania
-                st.success("Your image is ready!")
-                st.markdown(f"**[📥 Download High Resolution Image]({image_url})**")
+                st.markdown(f"**[📥 Pobierz obraz w pełnej jakości]({image_url})**")
                 
             except Exception as e:
-                status.update(label="❌ Error", state="error")
-                st.error(f"Something went wrong: {e}")
+                status.update(label="❌ Błąd", state="error")
+                st.error(f"Wystąpił problem: {e}")
+                # Debugging - wyświetl błąd jeśli to problem z modelem
+                if "404" in str(e):
+                    st.error("Wybrany model nie odpowiada. Sprawdź ID modelu w kodzie.")
