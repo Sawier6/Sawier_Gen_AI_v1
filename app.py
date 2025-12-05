@@ -52,10 +52,26 @@ st.markdown("""
         display: block;
     }
     
-    /* Custom Warning/Disclaimer Styling */
+    /* Custom Warning Styling */
     .stAlert {
         border-radius: 8px;
         border: 1px solid #fa660f33;
+    }
+    
+    /* --- NEW: RESULT IMAGE PREVIEW STYLING --- */
+    /* Kontener na wynikowy obrazek */
+    .result-image-container {
+        display: flex;
+        justify-content: center; /* Wyśrodkowanie */
+        margin: 20px 0;
+    }
+    /* Sam obrazek wewnątrz kontenera */
+    .result-image-container img {
+        max-width: 850px; /* Ograniczenie szerokości wizualnej (Preview ~1K) */
+        width: 100%;      /* Responsywność na małych ekranach */
+        height: auto;
+        border-radius: 12px; /* Ładne zaokrąglenie */
+        box-shadow: 0 6px 16px rgba(0,0,0,0.1); /* Delikatny cień */
     }
     </style>
 """, unsafe_allow_html=True)
@@ -254,11 +270,7 @@ if generate_btn:
                 if current_config["mode"] == "maxi_preset":
                     arguments["num_inference_steps"] = 4
                     arguments["guidance_scale"] = 0
-                    
-                    # --- ZMIANA NA 2K (WYSOKA JAKOŚĆ) ---
-                    arguments["resolution"] = "2K" 
-                    # ------------------------------------
-                    
+                    arguments["resolution"] = "2K" # FORCE HIGH QUALITY
                     arguments["aspect_ratio"] = selected_ratio_val 
                     arguments["image_urls"] = mascot_refs 
                 
@@ -287,21 +299,23 @@ if generate_btn:
                 st.error(f"Details: {e}")
                 result = None
 
-        # WYNIK POZA STATUSEM
+        # WYNIK POZA STATUSEM (Z NOWYM STYLEM)
         if result and 'images' in result:
             img_url = result['images'][0]['url']
             
-            st.image(img_url, use_container_width=True)
+            # UŻYWAMY HTML/CSS ZAMIAST st.image DO WYŚWIETLANIA PREVIEW
+            st.markdown(f'<div class="result-image-container"><img src="{img_url}"></div>', unsafe_allow_html=True)
             
             st.warning("⚠️ **Note:** If you like this result, please download it now. It will be overwritten when you generate a new image.")
 
             try:
+                # POBIERAMY PEŁNĄ ROZDZIELCZOŚĆ DLA PRZYCISKU
                 response = requests.get(img_url)
                 response.raise_for_status()
                 img_data = response.content
                 
                 st.download_button(
-                    label="📥 Download High-Res Image",
+                    label="📥 Download High-Res Image (2K)",
                     data=img_data,
                     file_name="strategy_ai_generated.jpg",
                     mime="image/jpeg",
