@@ -11,8 +11,8 @@ import time
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="AI Studio Pro",
-    page_icon="⚡",
+    page_title="Maxi Generator",
+    page_icon="🦡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -23,26 +23,25 @@ st.markdown("""
     /* 1. IMPORT CZCIONKI INTER */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
 
-    /* 2. GLOBALNE USTAWIENIA TEKSTU (Inter, Biały, Medium/Regular) */
+    /* 2. GLOBALNE USTAWIENIA TEKSTU */
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
         color: #ffffff;
-        font-weight: 400; /* Regular */
+        font-weight: 400;
     }
     
-    /* Pogrubienie dla labeli i mniejszych nagłówków */
     label, .stMarkdown p, .stCaption {
-        font-weight: 500; /* Medium */
+        font-weight: 500;
     }
 
-    /* 3. TYTUŁY H1 (Maxi Generator itp.) - POMARAŃCZOWY BOLD */
+    /* 3. TYTUŁY H1 */
     h1 {
         color: #fa660f !important;
         font-family: 'Inter', sans-serif !important;
-        font-weight: 700 !important; /* Bold */
+        font-weight: 700 !important;
     }
     
-    /* 4. UKRYWANIE ELEMENTÓW STREAMLIT (Ghost Mode) */
+    /* 4. GHOST MODE (Ukrywanie Streamlit) */
     [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
     [data-testid="stHeader"] {visibility: hidden !important; display: none !important;}
     [data-testid="stDecoration"] {visibility: hidden !important; display: none !important;}
@@ -54,13 +53,13 @@ st.markdown("""
         padding-top: 2rem !important;
     }
 
-    /* 5. STYLIZACJA PRZYCISKÓW */
+    /* 5. PRZYCISKI */
     .stButton>button {
         background-color: #fa660f;
         color: white;
         border-radius: 8px;
         height: 3.5em;
-        font-weight: bold; /* Inter Bold */
+        font-weight: bold;
         border: none;
         transition: all 0.3s ease;
     }
@@ -94,7 +93,6 @@ st.markdown("""
         box-shadow: 0 6px 16px rgba(0,0,0,0.1);
     }
     
-    /* Styl dla komunikatu o limicie (Caption pod tytułem) */
     .limit-info {
         color: #cccccc !important;
         font-size: 0.9em;
@@ -186,9 +184,8 @@ if not check_password():
 
 # --- SIDEBAR ---
 with st.sidebar:
-    # Sidebar Info
     if st.session_state.role == 'admin':
-        st.success("Logged as: **Super Admin (Unlimited)**")
+        st.success("Logged as: **Super Admin**")
     else:
         st.info("Logged as: **Team Member**")
 
@@ -200,74 +197,44 @@ with st.sidebar:
 
     st.divider()
     
-    model_name = st.selectbox(
-        "Select Mode",
-        options=["Maxi Generator", "flux 2 flex", "flux 2 flex edit", "nano banana pro edit"]
-    )
+    # --- ONLY MAXI SETTINGS NOW ---
+    st.markdown("**Settings**")
     
-    MODEL_CONFIG = {
-        "Maxi Generator": {"id": "fal-ai/nano-banana-pro/edit", "mode": "maxi_preset", "api_type": "nano"},
-        "flux 2 flex": {"id": "fal-ai/flux-2-flex", "mode": "text_to_image", "api_type": "flux_txt"},
-        "flux 2 flex edit": {"id": "fal-ai/flux-2-flex/edit", "mode": "image_edit", "api_type": "flux_edit"},
-        "nano banana pro edit": {"id": "fal-ai/nano-banana-pro/edit", "mode": "nano_edit", "api_type": "nano"}
-    }
+    # Aspect Ratio Selection
+    ratio_alias = st.radio("Aspect Ratio", ["9:16", "1:1", "16:9"], index=2)
     
-    current_config = MODEL_CONFIG[model_name]
-
-    # Settings
-    selected_size = None
-    selected_ratio_val = None
-
-    if current_config["mode"] == "maxi_preset" or current_config["api_type"] == "flux_txt":
-        ratio_alias = st.radio("Aspect Ratio", ["9:16", "1:1", "16:9"], index=2)
-        if ratio_alias == "9:16":
-            selected_size = "portrait_16_9"; selected_ratio_val = "9:16"    
-        elif ratio_alias == "1:1":
-            selected_size = "square"; selected_ratio_val = "1:1"
-        else: 
-            selected_size = "landscape_16_9"; selected_ratio_val = "16:9"
-            
-    elif current_config["api_type"] == "nano":
-         selected_size = st.radio("Resolution", ["1K", "2K"], index=0)
+    # Ratio Logic
+    if ratio_alias == "9:16":
+        selected_ratio_val = "9:16"    
+    elif ratio_alias == "1:1":
+        selected_ratio_val = "1:1"
+    else: 
+        selected_ratio_val = "16:9"
     
-    uploaded_files = []
-    mascot_refs = []
-    
-    if current_config["mode"] == "maxi_preset":
-        mascot_refs = get_mascot_refs()
-        if not mascot_refs: st.error("⚠️ Error: No images in '/mascot' folder.")
-
-    elif "edit" in current_config["mode"]:
-        st.divider()
-        uploaded_files = st.file_uploader("Upload Source Image (Required)", accept_multiple_files=True)
-        
-    elif current_config["mode"] == "text_to_image":
-        st.divider()
-        uploaded_files = st.file_uploader("Reference Image (Optional)", accept_multiple_files=True)
+    # Loading references silently
+    mascot_refs = get_mascot_refs()
+    if not mascot_refs:
+         st.error("⚠️ Error: No images in '/mascot' folder.")
 
 # --- MAIN AREA ---
 
-if current_config["mode"] == "maxi_preset":
-    col_head_img, col_head_txt = st.columns([1, 6])
-    with col_head_img:
-        if os.path.exists("maxi_head.png"):
-            st.image("maxi_head.png", use_container_width=True)
-        else:
-            st.write("🦡") 
-    with col_head_txt:
-        st.title("Maxi Generator")
-        # Wyświetlamy info o limicie TYLKO dla zwykłego usera
-        if st.session_state.role != 'admin':
-            st.markdown('<div class="limit-info">⚡ Team Access: Limited to 5 generations per hour.</div>', unsafe_allow_html=True)
-            
-else:
-    st.title(model_name)
+col_head_img, col_head_txt = st.columns([1, 6])
+with col_head_img:
+    if os.path.exists("maxi_head.png"):
+        st.image("maxi_head.png", use_container_width=True)
+    else:
+        st.write("🦡") 
+with col_head_txt:
+    st.title("Maxi Generator")
+    # Limit info for team members
+    if st.session_state.role != 'admin':
+        st.markdown('<div class="limit-info">⚡ Team Access: Limited to 5 generations per hour.</div>', unsafe_allow_html=True)
 
 prompt = st.text_area("Prompt", height=100, placeholder="E.g. The honey badger wearing a space suit on Mars...")
 
 col1, col2 = st.columns([1, 4])
 with col1:
-    generate_btn = st.button("RUN", use_container_width=True)
+    generate_btn = st.button("RUN GENERATOR", use_container_width=True)
 
 # --- QUOTA SYSTEM (5 PER HOUR) ---
 HOURLY_LIMIT = 5
@@ -309,44 +276,26 @@ if generate_btn:
             st.error("Missing FAL_KEY.")
         elif not prompt:
             st.warning("Prompt is required.")
-        elif "edit" in current_config["mode"] and current_config["mode"] != "maxi_preset" and not uploaded_files:
-            st.error("Upload an image to start editing.")
-        elif current_config["mode"] == "maxi_preset" and not mascot_refs:
-            st.error("Mascot generation failed: No references.")
+        elif not mascot_refs:
+            st.error("Administrator Error: No mascot references found.")
         else:
             with st.status("✨ Working on our strategic AI magic... Please wait.", expanded=True) as status:
                 try:
                     os.environ["FAL_KEY"] = api_key
                     
+                    # HARDCODED MAXI CONFIGURATION
                     arguments = {
                         "prompt": prompt,
-                        "num_inference_steps": 28,
-                        "guidance_scale": 3.5,
+                        "num_inference_steps": 4,     # Nano constraint
+                        "guidance_scale": 0,          # Nano constraint
+                        "resolution": "2K",           # High Quality
+                        "aspect_ratio": selected_ratio_val,
+                        "image_urls": mascot_refs,
                         "safety_tolerance": "2"
                     }
 
-                    if current_config["mode"] == "maxi_preset":
-                        arguments["num_inference_steps"] = 4
-                        arguments["guidance_scale"] = 0
-                        arguments["resolution"] = "2K"
-                        arguments["aspect_ratio"] = selected_ratio_val 
-                        arguments["image_urls"] = mascot_refs 
-                    
-                    elif current_config["api_type"] == "nano":
-                        arguments["num_inference_steps"] = 4
-                        arguments["guidance_scale"] = 0
-                        arguments["resolution"] = selected_size
-                        if uploaded_files:
-                            arguments["image_urls"] = [compress_and_encode_image(f) for f in uploaded_files]
-                    elif current_config["api_type"] == "flux_edit":
-                        if uploaded_files:
-                            arguments["image_urls"] = [compress_and_encode_image(f) for f in uploaded_files]
-                    else:
-                        if selected_size: arguments["image_size"] = selected_size
-                        if uploaded_files:
-                            arguments["image_url"] = compress_and_encode_image(uploaded_files[0])
-
-                    handler = fal_client.submit(current_config["id"], arguments=arguments)
+                    # Sending to Nano Banana Pro Edit
+                    handler = fal_client.submit("fal-ai/nano-banana-pro/edit", arguments=arguments)
                     result = handler.get()
                     
                     status.update(label="✨ Strategic Magic Delivered!", state="complete", expanded=False)
@@ -372,7 +321,7 @@ if generate_btn:
                     st.download_button(
                         label="📥 Download High-Res Image (2K)",
                         data=img_data,
-                        file_name="strategy_ai_generated.jpg",
+                        file_name="maxi_generated.jpg",
                         mime="image/jpeg",
                         use_container_width=True
                     )
