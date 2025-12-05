@@ -6,8 +6,8 @@ import re
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="AI Creative Studio Pro",
-    page_icon="🍊",
+    page_title="AI Studio",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -27,200 +27,211 @@ st.markdown("""
         background-color: #d9550a;
         color: white;
     }
-    /* Hide Streamlit footer */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    /* Clean look for selectbox */
+    .stSelectbox div[data-baseweb="select"] > div {
+        border-radius: 8px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 # --- HELPER FUNCTIONS ---
 
 def load_and_color_svg(file_path, new_color="#fa660f"):
-    """Loads SVG and replaces black/dark colors with the brand color."""
     try:
         with open(file_path, "r") as f:
             svg_content = f.read()
-        
-        # Color replacement logic
+        # Replace black/dark fills with brand color
         svg_content = re.sub(r'fill="[^"]*"', f'fill="{new_color}"', svg_content)
         svg_content = svg_content.replace("black", new_color)
         svg_content = svg_content.replace("#000000", new_color)
-        svg_content = svg_content.replace("#000", new_color)
-        
         return svg_content
     except Exception as e:
         return None
 
 def encode_image(uploaded_file):
-    """Encodes uploaded file to base64 for the API."""
     if uploaded_file is not None:
         bytes_data = uploaded_file.getvalue()
         base64_str = base64.b64encode(bytes_data).decode('utf-8')
         return f"data:image/jpeg;base64,{base64_str}"
     return None
 
-# --- PASSWORD PROTECTION ---
+# --- AUTHENTICATION ---
 ACCESS_PASSWORD = st.secrets.get("APP_PASSWORD", os.environ.get("APP_PASSWORD", ""))
 
 def check_password():
-    """Simple password gate."""
     if not ACCESS_PASSWORD:
         return True 
-        
     if "password_correct" not in st.session_state:
         st.session_state.password_correct = False
-    
     if st.session_state.password_correct:
         return True
     
     col1, col2, col3 = st.columns([1,2,1])
     with col2:
-        st.info("🔒 Restricted Access")
-        pwd = st.text_input("Enter Password:", type="password")
+        st.info("🔒 Login Required")
+        pwd = st.text_input("Password:", type="password")
         if pwd == ACCESS_PASSWORD:
             st.session_state.password_correct = True
             st.rerun()
-        elif pwd:
-            st.error("Incorrect password")
     return False
 
 if not check_password():
     st.stop()
 
-# --- SIDEBAR (Settings) ---
+# --- SIDEBAR ---
 with st.sidebar:
-    # 1. LOGO - RESIZED
+    # Logo Logic (Small size)
     logo_svg = load_and_color_svg("strategy_logo_black.svg", "#fa660f")
     if logo_svg:
-        # Changed max-width from 200px to 80px (approx 2.5x smaller)
         st.markdown(f'<div style="width: 80px; margin-bottom: 20px;">{logo_svg}</div>', unsafe_allow_html=True)
     else:
-        st.header("🍊 YOUR BRAND")
+        st.header("⚡ AI STUDIO")
 
     st.divider()
-    st.subheader("⚙️ Model Settings")
-
-    # 2. MODEL SELECTION
-    model_alias = st.selectbox(
-        "Select Model",
-        options=["Flux 1.1 Pro (Best Quality)", "Flux Dev (Standard)", "Nano Banana Pro (Fastest)"],
-        index=0
+    
+    # 1. MODEL SELECTION (Clean names)
+    model_name = st.selectbox(
+        "Model",
+        options=[
+            "flux 2 flex",
+            "flux 2 flex edit",
+            "nano banana pro edit"
+        ]
     )
     
-    # Mapping aliases to real Model IDs
-    model_map = {
-        "Flux 1.1 Pro (Best Quality)": "fal-ai/flux-pro/v1.1",
-        "Flux Dev (Standard)": "fal-ai/flux/dev",
-        "Nano Banana Pro (Fastest)": "fal-ai/fast-lightning-sdxl" 
+    # Model Configuration Map
+    # Holds ID and type (txt2img vs edit)
+    MODEL_CONFIG = {
+        "flux 2 flex": {
+            "id": "fal-ai/flux-2-flex",
+            "mode": "text_to_image"
+        },
+        "flux 2 flex edit": {
+            "id": "fal-ai/flux-2-flex/edit",
+            "mode": "image_edit"
+        },
+        "nano banana pro edit": {
+            "id": "fal-ai/nano-banana-pro/edit",
+            "mode": "nano_edit" # Nano Banana has specific API requirements
+        }
     }
-    selected_model_id = model_map[model_alias]
-
-    # 3. ASPECT RATIO
-    ratio_alias = st.radio(
-        "Aspect Ratio",
-        options=["9:16 (Story)", "1:1 (Square)", "16:9 (Landscape)"],
-        index=2
-    )
     
-    ratio_map = {
-        "9:16 (Story)": "portrait_16_9",
-        "1:1 (Square)": "square",
-        "16:9 (Landscape)": "landscape_16_9"
-    }
-    selected_ratio = ratio_map[ratio_alias]
+    current_config = MODEL_CONFIG[model_name]
 
-    # 4. REFERENCE IMAGES
+    # 2. SIZE / RATIO SETTINGS
+    # Only show Aspect Ratio for text-to-image models
+    # Edit models usually preserve original aspect ratio or use "Resolution"
+    if current_config["mode"] == "text_to_image":
+        ratio_alias = st.radio(
+            "Aspect Ratio",
+            options=["9:16", "1:1", "16:9"],
+            index=2
+        )
+        ratio_map = {"9:16": "portrait_16_9", "1:1": "square", "16:9": "landscape_16_9"}
+        selected_size = ratio_map[ratio_alias]
+    elif current_config["mode"] == "nano_edit":
+        # Nano Banana uses Resolution Enum (1K, 2K, 4K)
+        selected_size = st.radio("Resolution", ["1K", "2K"], index=0)
+    else:
+        # Flux Edit generally uses input image size, no setting needed here
+        selected_size = None
+
+    # 3. IMAGE UPLOAD
     st.divider()
-    st.subheader("🖼️ Reference Images")
-    uploaded_refs = st.file_uploader(
-        "Upload reference images (Max 6)", 
+    
+    # If mode is EDIT, upload is mandatory. If Txt2Img, it's optional (ref).
+    if "edit" in current_config["mode"]:
+        upload_label = "Upload Source Image (Required)"
+    else:
+        upload_label = "Reference Image (Optional)"
+        
+    uploaded_files = st.file_uploader(
+        upload_label, 
         accept_multiple_files=True,
         type=['png', 'jpg', 'jpeg']
     )
-    
-    if uploaded_refs and len(uploaded_refs) > 6:
-        st.warning("⚠️ Max 6 files. Only the first 6 will be processed.")
-        uploaded_refs = uploaded_refs[:6]
 
-# --- MAIN PAGE ---
-st.title("✨ AI Image Generator")
-st.caption(f"Current Model: {model_alias}")
+# --- MAIN INTERFACE ---
+st.title(model_name) # Wyświetla czystą nazwę wybranego modelu
 
-# Prompt Input
-prompt = st.text_area("Describe the image you want to generate:", height=120, placeholder="E.g. A futuristic sports car in orange color, cinematic lighting, photorealistic 8k...")
+prompt = st.text_area("Prompt", height=100, placeholder="Describe your creation...")
 
-col1, col2 = st.columns([1, 3])
+col1, col2 = st.columns([1, 4])
 with col1:
-    generate_btn = st.button("🚀 GENERATE", use_container_width=True)
+    generate_btn = st.button("RUN", use_container_width=True)
 
-# --- GENERATION LOGIC ---
+# --- GENERATION ENGINE ---
 if generate_btn:
     api_key = st.secrets.get("FAL_KEY")
     
+    # Validation
     if not api_key:
-        st.error("Error: FAL_KEY not found in Secrets.")
+        st.error("Missing FAL_KEY in secrets.")
     elif not prompt:
-        st.warning("Please enter a prompt description.")
+        st.warning("Prompt is required.")
+    elif "edit" in current_config["mode"] and not uploaded_files:
+        st.error(f"You must upload an image to use {model_name}.")
     else:
-        with st.status("🍊 AI is working...", expanded=True) as status:
+        with st.status("Processing...", expanded=True) as status:
             try:
                 os.environ["FAL_KEY"] = api_key
+                model_id = current_config["id"]
+                arguments = {"prompt": prompt}
                 
-                # --- INTELLIGENT STEPS CONFIGURATION ---
-                # "Nano Banana" (Lightning) supports ONLY 4 or 8 steps.
-                # Flux supports 28+. We adjust this automatically to prevent errors.
-                if "lightning" in selected_model_id:
-                    num_steps = 4 
-                    guidance = 0 # Lightning models usually ignore or need 0 guidance
+                # --- PAYLOAD BUILDER ---
+                
+                # CASE 1: NANO BANANA PRO EDIT
+                # Wymaga parametru 'image_urls' (lista) i 'resolution'
+                if current_config["mode"] == "nano_edit":
+                    if uploaded_files:
+                        # Convert all uploaded files to base64
+                        imgs = [encode_image(f) for f in uploaded_files]
+                        arguments["image_urls"] = imgs # Note: Plural 'image_urls'
+                        arguments["resolution"] = selected_size # e.g. "1K"
+                    
+                # CASE 2: FLUX 2 FLEX EDIT
+                # Wymaga parametru 'image_url' (single) lub references
+                elif current_config["mode"] == "image_edit":
+                    if uploaded_files:
+                        # Use first image as the edit source
+                        arguments["image_url"] = encode_image(uploaded_files[0])
+                        # Optional: Add extra images as references if needed, but keeping it simple
+                        arguments["num_inference_steps"] = 28
+                        arguments["guidance_scale"] = 3.5
+                        arguments["strength"] = 0.85 # Default strength for edit
+
+                # CASE 3: FLUX 2 FLEX (TEXT TO IMAGE)
+                # Standard params
                 else:
-                    num_steps = 28
-                    guidance = 3.5
-
-                # Basic arguments
-                arguments = {
-                    "prompt": prompt,
-                    "image_size": selected_ratio,
-                    "num_inference_steps": num_steps,
-                    "guidance_scale": guidance,
-                    "safety_tolerance": "2"
-                }
-
-                # --- REFERENCE IMAGE HANDLING ---
-                if uploaded_refs:
-                    st.write(f"Processing {len(uploaded_refs)} reference images...")
-                    main_ref_image = encode_image(uploaded_refs[0])
-                    arguments["image_url"] = main_ref_image
-                    
-                    # If Flux Dev is used, we swap to the img2img endpoint
-                    if "flux/dev" in selected_model_id:
-                        selected_model_id = "fal-ai/flux/dev/image-to-image"
-                        arguments["strength"] = 0.75
-                    
-                    # Nano Banana/Lightning usually handles img2img via image_url natively
-                    # but assumes specific strength logic.
-                    if "lightning" in selected_model_id:
-                         arguments["strength"] = 0.50 # Moderate influence
-
-                    st.info("ℹ️ Using the first image as the main reference.")
-
-                st.write("Sending to GPU cluster...")
+                    arguments["image_size"] = selected_size
+                    arguments["num_inference_steps"] = 28
+                    arguments["guidance_scale"] = 3.5
+                    # Support for Ref Image in Txt2Img (optional)
+                    if uploaded_files:
+                         arguments["image_url"] = encode_image(uploaded_files[0])
+                
+                # --- SUBMIT ---
+                st.write(f"Sending request to {model_name}...")
                 
                 handler = fal_client.submit(
-                    selected_model_id,
+                    model_id,
                     arguments=arguments,
                 )
                 
                 result = handler.get()
-                image_url = result['images'][0]['url']
                 
-                status.update(label="✅ Generation Complete!", state="complete", expanded=False)
-                
-                st.image(image_url, use_container_width=True)
-                st.markdown(f"**[📥 Download High Resolution Image]({image_url})**")
+                # Result parsing
+                if 'images' in result and len(result['images']) > 0:
+                    image_url = result['images'][0]['url']
+                    status.update(label="Done!", state="complete", expanded=False)
+                    st.image(image_url, use_container_width=True)
+                    st.markdown(f"**[Download]({image_url})**")
+                else:
+                    st.error("No image returned from API.")
+                    st.json(result) # Show debug info if empty
                 
             except Exception as e:
-                status.update(label="❌ Error", state="error")
-                st.error(f"Something went wrong: {e}")
-                # Debug info
-                if "unexpected value" in str(e):
-                    st.error(f"Model settings mismatch. Tried using {num_steps} steps for a model that doesn't support it.")
+                status.update(label="Error", state="error")
+                st.error(f"API Error: {e}")
