@@ -6,7 +6,7 @@ import re
 from PIL import Image
 import io
 import glob
-import requests # WYMAGANE do pobierania
+import requests
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
@@ -238,7 +238,7 @@ if generate_btn:
     elif current_config["mode"] == "maxi_preset" and not mascot_refs:
         st.error("Mascot generation failed: No references.")
     else:
-        # 1. STATUS BLOCK (Tylko procesowanie, zwinie się po zakończeniu)
+        # STATUS BLOCK
         with st.status("✨ Working on our strategic AI magic... Please wait.", expanded=True) as status:
             try:
                 os.environ["FAL_KEY"] = api_key
@@ -254,9 +254,14 @@ if generate_btn:
                 if current_config["mode"] == "maxi_preset":
                     arguments["num_inference_steps"] = 4
                     arguments["guidance_scale"] = 0
-                    arguments["resolution"] = "1K"
+                    
+                    # --- ZMIANA NA 2K (WYSOKA JAKOŚĆ) ---
+                    arguments["resolution"] = "2K" 
+                    # ------------------------------------
+                    
                     arguments["aspect_ratio"] = selected_ratio_val 
                     arguments["image_urls"] = mascot_refs 
+                
                 elif current_config["api_type"] == "nano":
                     arguments["num_inference_steps"] = 4
                     arguments["guidance_scale"] = 0
@@ -275,7 +280,6 @@ if generate_btn:
                 handler = fal_client.submit(current_config["id"], arguments=arguments)
                 result = handler.get()
                 
-                # Zmieniamy status na gotowe i zamykamy go
                 status.update(label="✨ Strategic Magic Delivered!", state="complete", expanded=False)
                 
             except Exception as e:
@@ -283,17 +287,14 @@ if generate_btn:
                 st.error(f"Details: {e}")
                 result = None
 
-        # 2. WYNIK (Poza blokiem statusu - widoczny od razu!)
+        # WYNIK POZA STATUSEM
         if result and 'images' in result:
             img_url = result['images'][0]['url']
             
-            # Obrazek na pełną szerokość kontenera
             st.image(img_url, use_container_width=True)
             
-            # Disclaimer
             st.warning("⚠️ **Note:** If you like this result, please download it now. It will be overwritten when you generate a new image.")
 
-            # Pobieranie i przycisk
             try:
                 response = requests.get(img_url)
                 response.raise_for_status()
@@ -311,6 +312,5 @@ if generate_btn:
                 st.markdown(f"[Backup Link]({img_url})")
         
         elif result:
-            # Fallback dla błędów API, które nie rzuciły exception
             st.error("API Error: No image returned.")
             st.json(result)
