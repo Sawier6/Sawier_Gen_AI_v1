@@ -102,7 +102,7 @@ st.markdown("""
         box-shadow: 0 10px 40px rgba(0,0,0,0.3);
     }
     
-    /* NOWE: STYL DLA MINIATUREK STYLI */
+    /* STYL DLA MINIATUREK STYLI */
     .style-thumb img {
         border-radius: 12px !important;
         border: 2px solid #333 !important;
@@ -111,11 +111,11 @@ st.markdown("""
     .style-thumb img:hover {
         border-color: #fa660f !important;
     }
-    /* Wyśrodkowanie podpisów pod miniaturkami */
     [data-testid="stImage"] + div {
         text-align: center !important;
-        font-size: 0.9em !important;
+        font-size: 0.85em !important;
         color: #cccccc !important;
+        margin-top: 5px !important;
     }
     
     .limit-info {
@@ -258,7 +258,7 @@ with col_head_txt:
 with st.container():
     st.markdown("### Settings")
     
-    # --- SEKCJA FORMATU ---
+    # --- FORMAT ---
     st.markdown("**Format**")
     ratio_alias = st.radio("Format Label (Hidden)", ["9:16", "1:1", "16:9"], index=2, horizontal=True, label_visibility="collapsed")
     if ratio_alias == "9:16":
@@ -268,42 +268,44 @@ with st.container():
     else: 
         selected_ratio_val = "16:9"
 
-    st.markdown("<br>", unsafe_allow_html=True) # Odstęp
+    st.markdown("<br>", unsafe_allow_html=True) 
 
-    # --- NOWA SEKCJA STYLU Z MINIATURKAMI ---
+    # --- VISUAL STYLE THUMBNAILS (FIXED NAMES) ---
     st.markdown("**Visual Style**")
     
-    # 1. Wyświetlamy 3 kolumny z obrazkami i podpisami
     col_thumb1, col_thumb2, col_thumb3 = st.columns(3)
     
+    # 1. Natural (Fixed .jpg.jpeg)
     with col_thumb1:
-        if os.path.exists("style_thumb_natural.jpg"):
+        if os.path.exists("style_thumb_natural.jpg.jpeg"):
             st.markdown('<div class="style-thumb">', unsafe_allow_html=True)
-            st.image("style_thumb_natural.jpg", use_container_width=True)
+            st.image("style_thumb_natural.jpg.jpeg", use_container_width=True)
             st.markdown("</div>", unsafe_allow_html=True)
         st.caption("Natural")
 
+    # 2. Light Neon (Fixed .jpg.jpeg)
     with col_thumb2:
-        if os.path.exists("style_thumb_light.jpg"):
+        if os.path.exists("style_thumb_light.jpg.jpeg"):
             st.markdown('<div class="style-thumb">', unsafe_allow_html=True)
-            st.image("style_thumb_light.jpg", use_container_width=True)
+            st.image("style_thumb_light.jpg.jpeg", use_container_width=True)
             st.markdown("</div>", unsafe_allow_html=True)
         st.caption("Light Neon")
         
+    # 3. Deep Neon (Fixed .jpg.jpeg)
     with col_thumb3:
-        if os.path.exists("style_thumb_deep.jpg"):
+        if os.path.exists("style_thumb_deep.jpg.jpeg"):
             st.markdown('<div class="style-thumb">', unsafe_allow_html=True)
-            st.image("style_thumb_deep.jpg", use_container_width=True)
+            st.image("style_thumb_deep.jpg.jpeg", use_container_width=True)
             st.markdown("</div>", unsafe_allow_html=True)
-        st.caption("Deep Neon")
+        st.caption("Neon") # CHANGED TO "Neon"
 
-    # 2. Wyświetlamy poziome radio buttony do faktycznego wyboru (bez etykiety, bo jest wyżej)
+    # Selection Logic
     style_mode = st.radio(
         "Style Selection (Hidden)",
         ["Natural (No Filter)", "Strategy Light Neon Style", "Strategy Neon Style"],
         index=0, 
         horizontal=True,
-        label_visibility="collapsed" # Ukrywamy etykietę
+        label_visibility="collapsed"
     )
 
 # --- PROMPT AREA ---
