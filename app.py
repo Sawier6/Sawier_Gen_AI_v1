@@ -78,7 +78,7 @@ st.markdown("""
         display: block;
     }
 
-    /* --- RESULT IMAGE FIX (V16.0) --- */
+    /* RESULT IMAGE STYLING */
     .result-image-container {
         display: flex;
         justify-content: center;
@@ -87,17 +87,10 @@ st.markdown("""
         width: 100%;
     }
     .result-image-container img {
-        /* Kluczowa zmiana: Ograniczenie wysokości */
         max-height: 650px !important; 
-        
-        /* Ograniczenie szerokości (żeby nie rozepchało na małych ekranach) */
         max-width: 100% !important;
-        
-        /* Zachowanie proporcji */
         width: auto !important;
         height: auto !important;
-        
-        /* Stylizacja rogów i cienia */
         border-radius: 30px !important;
         box-shadow: 0 10px 40px rgba(0,0,0,0.3);
     }
@@ -286,6 +279,28 @@ def increment_quota():
         if 'gen_count' not in st.session_state: st.session_state.gen_count = 0
         st.session_state.gen_count += 1
 
+# --- HIDDEN STYLE PROMPT ---
+# To jest ten tekst, którego user NIE widzi, a który definiuje styl.
+HIDDEN_STYLE = "{
+  "visual_style": {
+    "mood": "cinematic, premium, night-time fashion vibe",
+    "color_palette": {
+      "primary": ["dark grey", "graphite", "matte black"],
+      "accents": ["bright orange glow", "neon orange highlights"],
+      "rules": "background stays desaturated in greyscale, only key elements or motion lines use orange light"
+    },
+    "lighting": {
+      "type": "soft directional cinematic light",
+      "accent_lights": "thin glowing orange strips, neon reflections, light trails",
+      "contrast": "high contrast between dark environment and bright orange effects"
+    },
+    "background": {
+      "style": "slightly blurred futuristic city or architectural setting",
+      "textures": "polished metal, wet pavement reflections, glass surfaces",
+      "motion": "optional subtle motion blur in environment or light trails"
+    }
+  },"
+
 # --- EXECUTION ---
 if generate_btn:
     
@@ -303,8 +318,15 @@ if generate_btn:
                 try:
                     os.environ["FAL_KEY"] = api_key
                     
+                    # ŁĄCZENIE PROMPTU UŻYTKOWNIKA Z UKRYTYM STYLEM
+                    final_prompt = f"{prompt}. {HIDDEN_STYLE}"
+                    
+                    # LOGIC:
+                    # User: "playing chess"
+                    # AI sees: "playing chess. The environment is mostly dark graphite tones..."
+                    
                     arguments = {
-                        "prompt": prompt,
+                        "prompt": final_prompt, # <--- Tu wysyłamy połączony tekst
                         "num_inference_steps": 4,     
                         "guidance_scale": 0,          
                         "resolution": "2K",           
@@ -327,7 +349,6 @@ if generate_btn:
             if result and 'images' in result:
                 img_url = result['images'][0]['url']
                 
-                # WYŚWIETLANIE Z NOWYM STYLEM (CSS ogranicza wysokość do 650px)
                 st.markdown(f'<div class="result-image-container"><img src="{img_url}"></div>', unsafe_allow_html=True)
                 
                 st.warning("⚠️ **Note:** If you like this result, please download it now. It will be overwritten when you generate a new image.")
