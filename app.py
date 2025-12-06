@@ -226,6 +226,10 @@ with st.sidebar:
     else: 
         selected_ratio_val = "16:9"
     
+    # --- NOWY PRZEŁĄCZNIK STYLU ---
+    st.markdown("<br>", unsafe_allow_html=True) # Odstęp
+    use_style = st.toggle("✨ Strategy Neon Style", value=True)
+    
     mascot_refs = get_mascot_refs()
     if not mascot_refs:
          st.error("⚠️ Error: No images in '/mascot' folder.")
@@ -279,7 +283,7 @@ def increment_quota():
         if 'gen_count' not in st.session_state: st.session_state.gen_count = 0
         st.session_state.gen_count += 1
 
-# --- HIDDEN STYLE PROMPT (Converted from your JSON) ---
+# --- HIDDEN STYLE PROMPT ---
 HIDDEN_STYLE = "Cinematic premium night-time fashion vibe. Color palette dominated by dark grey, graphite, and matte black, accented with bright orange glow and neon orange highlights. The background remains desaturated in greyscale, while key elements feature orange light. Lighting is soft directional cinematic with thin glowing orange strips, neon reflections, and light trails, creating high contrast against the dark environment. The background is a slightly blurred futuristic city or architectural setting featuring polished metal, wet pavement reflections, and glass surfaces."
 
 # --- EXECUTION ---
@@ -299,8 +303,11 @@ if generate_btn:
                 try:
                     os.environ["FAL_KEY"] = api_key
                     
-                    # ŁĄCZENIE PROMPTU Z TWOIM NOWYM STYLEM
-                    final_prompt = f"{prompt}. {HIDDEN_STYLE}"
+                    # --- LOGIKA PRZEŁĄCZNIKA ---
+                    if use_style:
+                        final_prompt = f"{prompt}. {HIDDEN_STYLE}"
+                    else:
+                        final_prompt = prompt # Czysty prompt użytkownika
                     
                     arguments = {
                         "prompt": final_prompt,
