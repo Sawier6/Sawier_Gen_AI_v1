@@ -55,7 +55,6 @@ st.markdown("""
     
     .block-container {
         padding-top: 1rem !important;
-        padding-bottom: 5rem !important; /* Miejsce na dole */
     }
 
     /* 3. BUTTONS */
@@ -103,56 +102,45 @@ st.markdown("""
         box-shadow: 0 10px 40px rgba(0,0,0,0.3);
     }
     
-    /* --- V36 FIX: MOBILE THUMBNAILS --- */
-    
-    /* Wymuszamy mniejszy odstęp między kolumnami na mobile */
-    [data-testid="column"] {
-        padding: 0 5px !important; 
+    /* 6. STYLE GALLERY (HTML VERSION) */
+    .gallery-container {
+        display: flex;
+        flex-direction: row; /* Zawsze w rzędzie */
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+        width: 100%;
+        margin-bottom: 10px;
     }
-
-    .thumb-container {
+    .gallery-item {
+        width: 32%; /* 3 elementy obok siebie */
+        text-align: center;
         display: flex;
         flex-direction: column;
         align-items: center;
-        margin-bottom: 5px;
-        cursor: pointer; /* Żeby wyglądało na klikalne */
     }
-
-    .thumb-container img {
-        width: 85px !important; /* IDEALNY ROZMIAR NA MOBILE */
-        height: 85px !important; /* Kwadrat */
+    .gallery-img {
+        width: 100%; /* Wypełnia swój kontener (32%) */
+        aspect-ratio: 1 / 1; /* Zawsze kwadrat */
         object-fit: cover;
-        border-radius: 10px !important;
-        border: 2px solid #444 !important;
-        transition: all 0.2s ease;
-        margin-bottom: 4px !important;
+        border-radius: 10px;
+        border: 2px solid #333;
+        margin-bottom: 5px;
     }
-    
-    /* Efekt hover tylko na desktopie */
-    @media (hover: hover) {
-        .thumb-container img:hover {
-            border-color: #fa660f !important;
-            transform: scale(1.05);
-        }
-    }
-    
-    .thumb-caption {
-        text-align: center !important;
-        font-size: 0.75em !important; /* Mała czcionka */
-        color: #cccccc !important;
-        margin: 0 !important;
-        line-height: 1.1 !important;
-        white-space: nowrap; /* Zapobiega łamaniu tekstu na mobile */
+    .gallery-caption {
+        font-size: 11px;
+        color: #cccccc;
+        line-height: 1.2;
+        margin: 0;
     }
     
     .limit-info {
         color: #cccccc !important;
         font-size: 0.8em;
         margin-top: -10px;
-        margin-bottom: 10px;
+        margin-bottom: 20px;
     }
     
-    /* SUCCESS BANNER */
     .success-banner {
         background-color: rgba(250, 102, 15, 0.15);
         border: 1px solid #fa660f;
@@ -213,6 +201,14 @@ def get_mascot_refs(folder_name="mascot"):
     if not files: return None
     encoded_files = [compress_and_encode_image(f) for f in files]
     return [f for f in encoded_files if f is not None]
+
+# --- NOWA FUNKCJA: ŁADOWANIE OBRAZKA DO HTML ---
+def get_img_as_base64(file_path):
+    if not os.path.exists(file_path):
+        return ""
+    with open(file_path, "rb") as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
 
 # --- AUTHENTICATION ---
 ADMIN_PASS = st.secrets.get("ADMIN_PASSWORD", "")
@@ -297,34 +293,32 @@ with st.container():
 
     st.markdown("<br>", unsafe_allow_html=True) 
 
-    # VISUAL STYLE
+    # --- VISUAL STYLE GALLERY (HTML FIX FOR MOBILE) ---
     st.markdown("**Visual Style**")
     
-    col_thumb1, col_thumb2, col_thumb3 = st.columns(3)
+    # Ładujemy obrazki do base64
+    img1 = get_img_as_base64("style_thumb_natural.jpg.jpeg")
+    img2 = get_img_as_base64("style_thumb_light.jpg.jpeg")
+    img3 = get_img_as_base64("style_thumb_deep.jpg.jpeg")
     
-    # 1. Natural
-    with col_thumb1:
-        if os.path.exists("style_thumb_natural.jpg.jpeg"):
-            st.markdown('<div class="thumb-container">', unsafe_allow_html=True)
-            st.image("style_thumb_natural.jpg.jpeg")
-            st.markdown('<p class="thumb-caption">Natural</p>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-    # 2. Light Neon
-    with col_thumb2:
-        if os.path.exists("style_thumb_light.jpg.jpeg"):
-            st.markdown('<div class="thumb-container">', unsafe_allow_html=True)
-            st.image("style_thumb_light.jpg.jpeg")
-            st.markdown('<p class="thumb-caption">Light Neon</p>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-    # 3. Neon
-    with col_thumb3:
-        if os.path.exists("style_thumb_deep.jpg.jpeg"):
-            st.markdown('<div class="thumb-container">', unsafe_allow_html=True)
-            st.image("style_thumb_deep.jpg.jpeg")
-            st.markdown('<p class="thumb-caption">Neon</p>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+    # Budujemy HTML
+    html_gallery = f"""
+    <div class="gallery-container">
+        <div class="gallery-item">
+            <img src="data:image/jpeg;base64,{img1}" class="gallery-img">
+            <p class="gallery-caption">Natural</p>
+        </div>
+        <div class="gallery-item">
+            <img src="data:image/jpeg;base64,{img2}" class="gallery-img">
+            <p class="gallery-caption">Light Neon</p>
+        </div>
+        <div class="gallery-item">
+            <img src="data:image/jpeg;base64,{img3}" class="gallery-img">
+            <p class="gallery-caption">Neon</p>
+        </div>
+    </div>
+    """
+    st.markdown(html_gallery, unsafe_allow_html=True)
 
     # Radio Selection (Hidden Label)
     style_mode = st.radio(
@@ -399,6 +393,7 @@ if generate_btn:
                 try:
                     os.environ["FAL_KEY"] = api_key
                     
+                    # --- LOGIKA WYBORU STYLU ---
                     if style_mode == "Strategy Neon Style":
                         final_prompt = f"{prompt}. {STYLE_DEEP}"
                     elif style_mode == "Strategy Light Neon Style":
