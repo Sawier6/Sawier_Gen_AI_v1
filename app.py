@@ -109,9 +109,9 @@ st.markdown("""
         margin-bottom: 20px;
     }
     
-    /* 6. CUSTOM SUCCESS BANNER (NOWOŚĆ V25) */
+    /* 6. CUSTOM SUCCESS BANNER */
     .success-banner {
-        background-color: rgba(250, 102, 15, 0.15); /* Przezroczysty pomarańcz */
+        background-color: rgba(250, 102, 15, 0.15);
         border: 1px solid #fa660f;
         color: #fa660f;
         padding: 15px;
@@ -121,7 +121,7 @@ st.markdown("""
         margin-top: 20px;
         margin-bottom: 10px;
         width: 100%;
-        box-sizing: border-box; /* Gwarancja responsywności */
+        box-sizing: border-box;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -253,9 +253,11 @@ with st.container():
             selected_ratio_val = "16:9"
 
     with col_sett_2:
-        use_style = st.toggle("✨ Strategy Neon Style", value=True)
+        # ZMIANA: Value=False (Domyślnie wyłączone)
+        use_style = st.toggle("✨ Strategy Neon Style", value=False)
+        # ZMIANA: Nowy opis zachęcający do włączenia
         st.markdown(
-            '<div style="font-size: 11px; color: #888888; margin-top: -5px; line-height: 1.2;">Turn this off if you want a more colorful, less specific style.</div>', 
+            '<div style="font-size: 11px; color: #888888; margin-top: -5px; line-height: 1.2;">(Turn on to apply the signature Strategy Neon Style)</div>', 
             unsafe_allow_html=True
         )
 
@@ -312,10 +314,8 @@ if generate_btn:
         elif not mascot_refs:
             st.error("Admin Error: No mascot refs.")
         else:
-            # 1. TWORZYMY PUSTY KONTENER NA STATUS
             status_container = st.empty()
             
-            # Używamy kontenera do wyświetlenia statusu
             with status_container.status("✨ Working on our strategic AI magic... Please wait.", expanded=True):
                 try:
                     os.environ["FAL_KEY"] = api_key
@@ -337,20 +337,16 @@ if generate_btn:
                     handler = fal_client.submit("fal-ai/nano-banana-pro/edit", arguments=arguments)
                     result = handler.get()
                     
-                    # Po sukcesie nie aktualizujemy statusu, tylko go czyścimy
-                    # status.update(...) <- TO USUWAMY
                     increment_quota() 
                 except Exception as e:
                     st.error(f"Details: {e}")
                     result = None
 
-            # 2. CZYSZCZENIE KONTENERA (Status znika całkowicie)
             status_container.empty()
 
             if result and 'images' in result:
                 img_url = result['images'][0]['url']
                 
-                # 3. WYŚWIETLANIE CUSTOMOWEGO BANERA SUKCESU (Zamiast statusu)
                 st.markdown('<div class="success-banner">✨ Strategic Magic Delivered!</div>', unsafe_allow_html=True)
                 
                 st.markdown(f'<div class="result-image-container"><img src="{img_url}"></div>', unsafe_allow_html=True)
