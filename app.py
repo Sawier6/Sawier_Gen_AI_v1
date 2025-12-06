@@ -14,7 +14,7 @@ st.set_page_config(
     page_title="Maxi Generator",
     page_icon="🦡",
     layout="wide",
-    initial_sidebar_state="collapsed" # Domyślnie zwinięty pasek boczny (bo przenieśliśmy ustawienia)
+    initial_sidebar_state="collapsed"
 )
 
 # --- CSS (Styling, FONTS & GHOST MODE) ---
@@ -54,7 +54,7 @@ st.markdown("""
     #MainMenu {visibility: hidden !important; display: none !important;}
     
     .block-container {
-        padding-top: 1rem !important; /* Mniejszy odstęp na górze dla mobile */
+        padding-top: 1rem !important;
     }
 
     /* 3. BUTTONS */
@@ -75,9 +75,9 @@ st.markdown("""
     
     /* 4. IMAGES */
     .logo-container {
-        max-width: 150px; /* Nieco mniejsze logo */
+        max-width: 140px; /* Rozmiar logo na głównej stronie */
         width: 100%;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
     }
     .logo-container svg, .logo-container img {
         width: 100% !important;
@@ -106,15 +106,6 @@ st.markdown("""
         color: #cccccc !important;
         font-size: 0.8em;
         margin-top: -10px;
-        margin-bottom: 20px;
-    }
-    
-    /* MOBILE SETTINGS CONTAINER */
-    .settings-box {
-        background-color: #262730;
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid #333;
         margin-bottom: 20px;
     }
     </style>
@@ -204,7 +195,7 @@ def check_password():
 if not check_password():
     st.stop()
 
-# --- SIDEBAR (ONLY LOGOUT NOW) ---
+# --- SIDEBAR ---
 with st.sidebar:
     if st.session_state.role == 'admin':
         st.success("Role: **Super Admin**")
@@ -218,6 +209,12 @@ with st.sidebar:
 
 # --- HEADER AREA ---
 
+# 1. STRATEGY LOGO (TERAZ WIDOCZNE NA GÓRZE STRONY GŁÓWNEJ)
+logo_svg = process_svg_logo("strategy_logo_black.svg", "#fa660f")
+if logo_svg:
+    st.markdown(f'<div class="logo-container">{logo_svg}</div>', unsafe_allow_html=True)
+
+# 2. MAXI HEADER (IKONA + TYTUŁ)
 col_head_img, col_head_txt = st.columns([1, 6])
 with col_head_img:
     if os.path.exists("maxi_head.png"):
@@ -229,8 +226,7 @@ with col_head_txt:
     if st.session_state.role != 'admin':
         st.markdown('<div class="limit-info">⚡ Team Access: Limited to 5 generations per hour.</div>', unsafe_allow_html=True)
 
-# --- SETTINGS AREA (MOVED FROM SIDEBAR TO MAIN) ---
-# Używamy kontenera, żeby oddzielić to wizualnie
+# --- SETTINGS AREA ---
 with st.container():
     st.markdown("### Settings")
     col_sett_1, col_sett_2 = st.columns([1, 1])
@@ -246,17 +242,15 @@ with st.container():
 
     with col_sett_2:
         use_style = st.toggle("✨ Strategy Neon Style", value=True)
-        # ZMNIEJSZONY TEKST (11px)
         st.markdown(
             '<div style="font-size: 11px; color: #888888; margin-top: -5px; line-height: 1.2;">Turn this off if you want a more colorful, less specific style.</div>', 
             unsafe_allow_html=True
         )
 
 # --- PROMPT AREA ---
-st.markdown("<br>", unsafe_allow_html=True) # Odstęp
+st.markdown("<br>", unsafe_allow_html=True)
 prompt = st.text_area("Prompt", height=100, placeholder="E.g. The honey badger wearing a space suit on Mars...")
 
-# Button na pełną szerokość
 generate_btn = st.button("RUN GENERATOR", use_container_width=True)
 
 
