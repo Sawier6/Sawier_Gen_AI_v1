@@ -253,9 +253,10 @@ with st.container():
             selected_ratio_val = "16:9"
 
     with col_sett_2:
+        # ZMIANA NAZW OPCJI (BEZ EMOTIKON)
         style_mode = st.radio(
             "Visual Style",
-            ["Natural (No Filter)", "✨ Strategy Light Neon", "🔥 Strategy Deep Neon"],
+            ["Natural (No Filter)", "Strategy Light Neon Style", "Strategy Neon Style"],
             index=0, 
             horizontal=False
         )
@@ -301,10 +302,10 @@ def increment_quota():
 
 # --- STYLE PROMPTS ---
 
-# 1. DEEP NEON (Mocny, agresywny)
+# 1. DEEP NEON (Mocny)
 STYLE_DEEP = "Visual style defined by high contrast dark-mode aesthetic dominated by deep graphite, matte charcoal, and cool grey tones. The scene is heavily accented with intensely vibrant neon orange elements: dynamic long exposure light trails, streaking neon lines, glowing architectural stripes, and prominent light leaks. The orange glow is voluminous and atmospheric, casting strong reflections on dark surfaces. The overall feel is energetic, futuristic, and dramatic with strong neon lighting effects against a dark background."
 
-# 2. LIGHT NEON (Nowy, zbalansowany)
+# 2. LIGHT NEON (Zbalansowany)
 STYLE_LIGHT = "Visual style defined by high contrast aesthetic. Shadows, midtones, and blacks have low saturation (approx 30%), rendered in deep graphite, matte charcoal, and cool grey tones. Highlights and light sources are exclusively vibrant, 100% saturated neon orange with a soft blooming glow. Lighting is cinematic and dramatic, featuring subtle neon light trails and occasional natural orange lens flares. The overall color grading creates a sophisticated look: muted darks versus vivid orange lights, maintaining a premium, sleek, and moody atmosphere regardless of the setting."
 
 # --- EXECUTION ---
@@ -324,9 +325,10 @@ if generate_btn:
                 try:
                     os.environ["FAL_KEY"] = api_key
                     
-                    if style_mode == "🔥 Strategy Deep Neon":
+                    # --- LOGIKA WYBORU STYLU (ZAKTUALIZOWANE NAZWY) ---
+                    if style_mode == "Strategy Neon Style":
                         final_prompt = f"{prompt}. {STYLE_DEEP}"
-                    elif style_mode == "✨ Strategy Light Neon":
+                    elif style_mode == "Strategy Light Neon Style":
                         final_prompt = f"{prompt}. {STYLE_LIGHT}"
                     else: # Natural
                         final_prompt = prompt 
