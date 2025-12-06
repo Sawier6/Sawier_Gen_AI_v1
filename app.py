@@ -55,6 +55,7 @@ st.markdown("""
     
     .block-container {
         padding-top: 1rem !important;
+        padding-bottom: 5rem !important; /* Miejsce na dole */
     }
 
     /* 3. BUTTONS */
@@ -102,47 +103,56 @@ st.markdown("""
         box-shadow: 0 10px 40px rgba(0,0,0,0.3);
     }
     
-    /* --- V35 FIX: FLEXBOX CONTAINER DLA MINIATUREK --- */
+    /* --- V36 FIX: MOBILE THUMBNAILS --- */
     
-    /* Kontener trzymający obrazek i podpis razem, wyśrodkowane */
+    /* Wymuszamy mniejszy odstęp między kolumnami na mobile */
+    [data-testid="column"] {
+        padding: 0 5px !important; 
+    }
+
     .thumb-container {
         display: flex;
         flex-direction: column;
-        align-items: center; /* Perfekcyjne centrowanie w poziomie */
-        justify-content: flex-start;
-        margin-bottom: 10px;
+        align-items: center;
+        margin-bottom: 5px;
+        cursor: pointer; /* Żeby wyglądało na klikalne */
     }
 
-    /* Styl samego obrazka wewnątrz kontenera */
     .thumb-container img {
-        width: 60px !important; /* SZTYWNA MAŁA SZEROKOŚĆ */
-        height: auto !important;
-        border-radius: 8px !important; /* Mniejszy radius dla małego obrazka */
-        border: 2px solid #333 !important;
+        width: 85px !important; /* IDEALNY ROZMIAR NA MOBILE */
+        height: 85px !important; /* Kwadrat */
+        object-fit: cover;
+        border-radius: 10px !important;
+        border: 2px solid #444 !important;
         transition: all 0.2s ease;
-        margin-bottom: 5px !important; /* Minimalny odstęp od tekstu */
-    }
-    .thumb-container img:hover {
-        border-color: #fa660f !important;
+        margin-bottom: 4px !important;
     }
     
-    /* Styl podpisu */
+    /* Efekt hover tylko na desktopie */
+    @media (hover: hover) {
+        .thumb-container img:hover {
+            border-color: #fa660f !important;
+            transform: scale(1.05);
+        }
+    }
+    
     .thumb-caption {
         text-align: center !important;
-        font-size: 0.75em !important; /* Mniejsza czcionka */
+        font-size: 0.75em !important; /* Mała czcionka */
         color: #cccccc !important;
-        margin: 0 !important; /* Zero marginesów */
+        margin: 0 !important;
         line-height: 1.1 !important;
+        white-space: nowrap; /* Zapobiega łamaniu tekstu na mobile */
     }
     
     .limit-info {
         color: #cccccc !important;
         font-size: 0.8em;
         margin-top: -10px;
-        margin-bottom: 20px;
+        margin-bottom: 10px;
     }
     
-    /* 6. CUSTOM SUCCESS BANNER */
+    /* SUCCESS BANNER */
     .success-banner {
         background-color: rgba(250, 102, 15, 0.15);
         border: 1px solid #fa660f;
@@ -275,9 +285,9 @@ with col_head_txt:
 with st.container():
     st.markdown("### Settings")
     
-    # --- FORMAT ---
+    # FORMAT
     st.markdown("**Format**")
-    ratio_alias = st.radio("Format Label (Hidden)", ["9:16", "1:1", "16:9"], index=2, horizontal=True, label_visibility="collapsed")
+    ratio_alias = st.radio("Format Label", ["9:16", "1:1", "16:9"], index=2, horizontal=True, label_visibility="collapsed")
     if ratio_alias == "9:16":
         selected_ratio_val = "9:16"    
     elif ratio_alias == "1:1":
@@ -287,7 +297,7 @@ with st.container():
 
     st.markdown("<br>", unsafe_allow_html=True) 
 
-    # --- VISUAL STYLE THUMBNAILS (V35 Fix: Flexbox centering & sizing) ---
+    # VISUAL STYLE
     st.markdown("**Visual Style**")
     
     col_thumb1, col_thumb2, col_thumb3 = st.columns(3)
@@ -295,11 +305,9 @@ with st.container():
     # 1. Natural
     with col_thumb1:
         if os.path.exists("style_thumb_natural.jpg.jpeg"):
-            # Otwieramy kontener flex
             st.markdown('<div class="thumb-container">', unsafe_allow_html=True)
             st.image("style_thumb_natural.jpg.jpeg")
             st.markdown('<p class="thumb-caption">Natural</p>', unsafe_allow_html=True)
-            # Zamykamy kontener flex
             st.markdown('</div>', unsafe_allow_html=True)
 
     # 2. Light Neon
@@ -318,9 +326,9 @@ with st.container():
             st.markdown('<p class="thumb-caption">Neon</p>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
-    # Selection Logic
+    # Radio Selection (Hidden Label)
     style_mode = st.radio(
-        "Style Selection (Hidden)",
+        "Style Selection",
         ["Natural (No Filter)", "Strategy Light Neon Style", "Strategy Neon Style"],
         index=0, 
         horizontal=True,
@@ -391,7 +399,6 @@ if generate_btn:
                 try:
                     os.environ["FAL_KEY"] = api_key
                     
-                    # --- LOGIKA WYBORU STYLU ---
                     if style_mode == "Strategy Neon Style":
                         final_prompt = f"{prompt}. {STYLE_DEEP}"
                     elif style_mode == "Strategy Light Neon Style":
