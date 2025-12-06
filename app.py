@@ -26,7 +26,7 @@ st.markdown("""
     * {
         font-family: 'Inter', sans-serif !important;
     }
-    input, textarea, [data-baseweb="select"], [data-testid="stMarkdownContainer"] p {
+    input, textarea, [data-baseweb="select"], [data-testid="stMarkdownContainer"] p, [data-baseweb="radio"] {
         font-family: 'Inter', sans-serif !important;
     }
 
@@ -253,10 +253,11 @@ with st.container():
             selected_ratio_val = "16:9"
 
     with col_sett_2:
-        use_style = st.toggle("✨ Strategy Neon Style", value=False)
-        st.markdown(
-            '<div style="font-size: 11px; color: #888888; margin-top: -5px; line-height: 1.2;">(Turn on to apply the signature Strategy Neon Style)</div>', 
-            unsafe_allow_html=True
+        style_mode = st.radio(
+            "Visual Style",
+            ["Natural (No Filter)", "✨ Strategy Light Neon", "🔥 Strategy Deep Neon"],
+            index=0, 
+            horizontal=False
         )
 
 # --- PROMPT AREA ---
@@ -298,8 +299,13 @@ def increment_quota():
         if 'gen_count' not in st.session_state: st.session_state.gen_count = 0
         st.session_state.gen_count += 1
 
-# --- HIDDEN STYLE PROMPT (V27.0 - MORE DYNAMIC NEON) ---
-HIDDEN_STYLE = "Visual style defined by high contrast dark-mode aesthetic dominated by deep graphite, matte charcoal, and cool grey tones. The scene is heavily accented with intensely vibrant neon orange elements: dynamic long exposure light trails, streaking neon lines, glowing architectural stripes, and prominent light leaks. The orange glow is voluminous and atmospheric, casting strong reflections on dark surfaces. The overall feel is energetic, futuristic, and dramatic with strong neon lighting effects against a dark background."
+# --- STYLE PROMPTS ---
+
+# 1. DEEP NEON (Mocny, agresywny)
+STYLE_DEEP = "Visual style defined by high contrast dark-mode aesthetic dominated by deep graphite, matte charcoal, and cool grey tones. The scene is heavily accented with intensely vibrant neon orange elements: dynamic long exposure light trails, streaking neon lines, glowing architectural stripes, and prominent light leaks. The orange glow is voluminous and atmospheric, casting strong reflections on dark surfaces. The overall feel is energetic, futuristic, and dramatic with strong neon lighting effects against a dark background."
+
+# 2. LIGHT NEON (Nowy, zbalansowany)
+STYLE_LIGHT = "Visual style defined by high contrast aesthetic. Shadows, midtones, and blacks have low saturation (approx 30%), rendered in deep graphite, matte charcoal, and cool grey tones. Highlights and light sources are exclusively vibrant, 100% saturated neon orange with a soft blooming glow. Lighting is cinematic and dramatic, featuring subtle neon light trails and occasional natural orange lens flares. The overall color grading creates a sophisticated look: muted darks versus vivid orange lights, maintaining a premium, sleek, and moody atmosphere regardless of the setting."
 
 # --- EXECUTION ---
 if generate_btn:
@@ -317,9 +323,12 @@ if generate_btn:
             with status_container.status("✨ Working on our strategic AI magic... Please wait.", expanded=True):
                 try:
                     os.environ["FAL_KEY"] = api_key
-                    if use_style:
-                        final_prompt = f"{prompt}. {HIDDEN_STYLE}"
-                    else:
+                    
+                    if style_mode == "🔥 Strategy Deep Neon":
+                        final_prompt = f"{prompt}. {STYLE_DEEP}"
+                    elif style_mode == "✨ Strategy Light Neon":
+                        final_prompt = f"{prompt}. {STYLE_LIGHT}"
+                    else: # Natural
                         final_prompt = prompt 
                     
                     arguments = {
