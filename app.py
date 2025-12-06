@@ -253,9 +253,7 @@ with st.container():
             selected_ratio_val = "16:9"
 
     with col_sett_2:
-        # ZMIANA: Value=False (Domyślnie wyłączone)
         use_style = st.toggle("✨ Strategy Neon Style", value=False)
-        # ZMIANA: Nowy opis zachęcający do włączenia
         st.markdown(
             '<div style="font-size: 11px; color: #888888; margin-top: -5px; line-height: 1.2;">(Turn on to apply the signature Strategy Neon Style)</div>', 
             unsafe_allow_html=True
@@ -300,8 +298,8 @@ def increment_quota():
         if 'gen_count' not in st.session_state: st.session_state.gen_count = 0
         st.session_state.gen_count += 1
 
-# --- HIDDEN STYLE PROMPT ---
-HIDDEN_STYLE = "Visual style defined by high contrast dark-mode aesthetic. Shadows, midtones, and blacks are strictly desaturated, rendered in deep graphite, matte charcoal, and cool grey tones. Highlights and light sources are exclusively vibrant neon orange with a soft blooming glow. Lighting is cinematic and dramatic, featuring occasional natural orange lens flares. The overall color grading creates a duotone effect: monochrome darks versus glowing orange lights, maintaining a premium, sleek, and moody atmosphere regardless of the setting."
+# --- HIDDEN STYLE PROMPT (V27.0 - MORE DYNAMIC NEON) ---
+HIDDEN_STYLE = "Visual style defined by high contrast dark-mode aesthetic dominated by deep graphite, matte charcoal, and cool grey tones. The scene is heavily accented with intensely vibrant neon orange elements: dynamic long exposure light trails, streaking neon lines, glowing architectural stripes, and prominent light leaks. The orange glow is voluminous and atmospheric, casting strong reflections on dark surfaces. The overall feel is energetic, futuristic, and dramatic with strong neon lighting effects against a dark background."
 
 # --- EXECUTION ---
 if generate_btn:
