@@ -102,6 +102,22 @@ st.markdown("""
         box-shadow: 0 10px 40px rgba(0,0,0,0.3);
     }
     
+    /* NOWE: STYL DLA MINIATUREK STYLI */
+    .style-thumb img {
+        border-radius: 12px !important;
+        border: 2px solid #333 !important;
+        transition: all 0.2s ease;
+    }
+    .style-thumb img:hover {
+        border-color: #fa660f !important;
+    }
+    /* Wyśrodkowanie podpisów pod miniaturkami */
+    [data-testid="stImage"] + div {
+        text-align: center !important;
+        font-size: 0.9em !important;
+        color: #cccccc !important;
+    }
+    
     .limit-info {
         color: #cccccc !important;
         font-size: 0.8em;
@@ -241,25 +257,54 @@ with col_head_txt:
 # --- SETTINGS AREA ---
 with st.container():
     st.markdown("### Settings")
-    col_sett_1, col_sett_2 = st.columns([1, 1])
     
-    with col_sett_1:
-        ratio_alias = st.radio("Format", ["9:16", "1:1", "16:9"], index=2, horizontal=True)
-        if ratio_alias == "9:16":
-            selected_ratio_val = "9:16"    
-        elif ratio_alias == "1:1":
-            selected_ratio_val = "1:1"
-        else: 
-            selected_ratio_val = "16:9"
+    # --- SEKCJA FORMATU ---
+    st.markdown("**Format**")
+    ratio_alias = st.radio("Format Label (Hidden)", ["9:16", "1:1", "16:9"], index=2, horizontal=True, label_visibility="collapsed")
+    if ratio_alias == "9:16":
+        selected_ratio_val = "9:16"    
+    elif ratio_alias == "1:1":
+        selected_ratio_val = "1:1"
+    else: 
+        selected_ratio_val = "16:9"
 
-    with col_sett_2:
-        # ZMIANA NAZW OPCJI (BEZ EMOTIKON)
-        style_mode = st.radio(
-            "Visual Style",
-            ["Natural (No Filter)", "Strategy Light Neon Style", "Strategy Neon Style"],
-            index=0, 
-            horizontal=False
-        )
+    st.markdown("<br>", unsafe_allow_html=True) # Odstęp
+
+    # --- NOWA SEKCJA STYLU Z MINIATURKAMI ---
+    st.markdown("**Visual Style**")
+    
+    # 1. Wyświetlamy 3 kolumny z obrazkami i podpisami
+    col_thumb1, col_thumb2, col_thumb3 = st.columns(3)
+    
+    with col_thumb1:
+        if os.path.exists("style_thumb_natural.jpg"):
+            st.markdown('<div class="style-thumb">', unsafe_allow_html=True)
+            st.image("style_thumb_natural.jpg", use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+        st.caption("Natural")
+
+    with col_thumb2:
+        if os.path.exists("style_thumb_light.jpg"):
+            st.markdown('<div class="style-thumb">', unsafe_allow_html=True)
+            st.image("style_thumb_light.jpg", use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+        st.caption("Light Neon")
+        
+    with col_thumb3:
+        if os.path.exists("style_thumb_deep.jpg"):
+            st.markdown('<div class="style-thumb">', unsafe_allow_html=True)
+            st.image("style_thumb_deep.jpg", use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+        st.caption("Deep Neon")
+
+    # 2. Wyświetlamy poziome radio buttony do faktycznego wyboru (bez etykiety, bo jest wyżej)
+    style_mode = st.radio(
+        "Style Selection (Hidden)",
+        ["Natural (No Filter)", "Strategy Light Neon Style", "Strategy Neon Style"],
+        index=0, 
+        horizontal=True,
+        label_visibility="collapsed" # Ukrywamy etykietę
+    )
 
 # --- PROMPT AREA ---
 st.markdown("<br>", unsafe_allow_html=True)
@@ -325,7 +370,7 @@ if generate_btn:
                 try:
                     os.environ["FAL_KEY"] = api_key
                     
-                    # --- LOGIKA WYBORU STYLU (ZAKTUALIZOWANE NAZWY) ---
+                    # --- LOGIKA WYBORU STYLU ---
                     if style_mode == "Strategy Neon Style":
                         final_prompt = f"{prompt}. {STYLE_DEEP}"
                     elif style_mode == "Strategy Light Neon Style":
