@@ -17,17 +17,15 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS (Styling, FONTS & GHOST MODE) ---
+# --- CSS (Styling, FONTS & NUCLEAR GHOST MODE) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
 
-    /* 1. NUCLEAR FONT FIX - WYMUSZENIE INTER WSZĘDZIE */
+    /* 1. NUCLEAR FONT FIX */
     * {
         font-family: 'Inter', sans-serif !important;
     }
-    
-    /* Specjalne traktowanie dla pól tekstowych (input, textarea), żeby też miały Inter */
     input, textarea, [data-baseweb="select"] {
         font-family: 'Inter', sans-serif !important;
     }
@@ -37,7 +35,6 @@ st.markdown("""
         font-weight: 400;
     }
     
-    /* Wagi czcionek */
     label, .stMarkdown p, .stCaption, .limit-info {
         font-weight: 500 !important;
     }
@@ -47,19 +44,30 @@ st.markdown("""
         font-weight: 700 !important;
     }
     
-    /* GHOST MODE */
+    /* 2. NUCLEAR GHOST MODE - UKRYWANIE WSZYSTKIEGO CO SIĘ DA */
+    
+    /* Główny pasek narzędzi (góra) */
     [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
+    
+    /* Nagłówek (paski kolorowe) */
     [data-testid="stHeader"] {visibility: hidden !important; display: none !important;}
     [data-testid="stDecoration"] {visibility: hidden !important; display: none !important;}
+    
+    /* Przycisk Manage App / Deploy (dół/góra) */
     .stDeployButton {display:none !important;}
+    [data-testid="stManageAppButton"] {display:none !important;}
+    [data-testid="stStatusWidget"] {display:none !important;} /* "Biegający ludzik" */
+    
+    /* Stopka "Made with Streamlit" */
     footer {visibility: hidden !important; display: none !important;}
     #MainMenu {visibility: hidden !important; display: none !important;}
     
+    /* Przesunięcie treści do samej góry */
     .block-container {
         padding-top: 2rem !important;
     }
 
-    /* BUTTONS */
+    /* 3. BUTTONS */
     .stButton>button {
         background-color: #fa660f;
         color: white;
@@ -75,7 +83,7 @@ st.markdown("""
         transform: scale(1.02);
     }
     
-    /* IMAGES (LOGO) */
+    /* 4. IMAGES (LOGO) */
     .logo-container {
         max-width: 180px;
         width: 100%;
@@ -87,7 +95,7 @@ st.markdown("""
         display: block;
     }
 
-    /* RESULT IMAGE STYLING */
+    /* 5. RESULT IMAGE STYLING */
     .result-image-container {
         display: flex;
         justify-content: center;
