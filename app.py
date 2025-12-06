@@ -102,30 +102,37 @@ st.markdown("""
         box-shadow: 0 10px 40px rgba(0,0,0,0.3);
     }
     
-    /* --- STYL DLA MINIATUREK STYLI (V34 FIX) --- */
-    .style-thumb {
-        text-align: center; /* Wyśrodkowanie kontenera */
-        margin-bottom: 5px;
+    /* --- V35 FIX: FLEXBOX CONTAINER DLA MINIATUREK --- */
+    
+    /* Kontener trzymający obrazek i podpis razem, wyśrodkowane */
+    .thumb-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* Perfekcyjne centrowanie w poziomie */
+        justify-content: flex-start;
+        margin-bottom: 10px;
     }
-    .style-thumb img {
-        width: 130px !important; /* SZTYWNA SZEROKOŚĆ */
+
+    /* Styl samego obrazka wewnątrz kontenera */
+    .thumb-container img {
+        width: 60px !important; /* SZTYWNA MAŁA SZEROKOŚĆ */
         height: auto !important;
-        border-radius: 12px !important;
+        border-radius: 8px !important; /* Mniejszy radius dla małego obrazka */
         border: 2px solid #333 !important;
         transition: all 0.2s ease;
+        margin-bottom: 5px !important; /* Minimalny odstęp od tekstu */
     }
-    .style-thumb img:hover {
+    .thumb-container img:hover {
         border-color: #fa660f !important;
     }
     
-    /* NOWY STYL DLA PODPISÓW (BLISKO OBRAZKA) */
+    /* Styl podpisu */
     .thumb-caption {
         text-align: center !important;
-        font-size: 0.85em !important;
+        font-size: 0.75em !important; /* Mniejsza czcionka */
         color: #cccccc !important;
-        margin-top: -5px !important; /* Ujemny margines podciąga tekst do góry */
-        margin-bottom: 15px !important;
-        line-height: 1.2 !important;
+        margin: 0 !important; /* Zero marginesów */
+        line-height: 1.1 !important;
     }
     
     .limit-info {
@@ -280,7 +287,7 @@ with st.container():
 
     st.markdown("<br>", unsafe_allow_html=True) 
 
-    # --- VISUAL STYLE THUMBNAILS (V34 Fix: Small size & tight spacing) ---
+    # --- VISUAL STYLE THUMBNAILS (V35 Fix: Flexbox centering & sizing) ---
     st.markdown("**Visual Style**")
     
     col_thumb1, col_thumb2, col_thumb3 = st.columns(3)
@@ -288,28 +295,28 @@ with st.container():
     # 1. Natural
     with col_thumb1:
         if os.path.exists("style_thumb_natural.jpg.jpeg"):
-            st.markdown('<div class="style-thumb">', unsafe_allow_html=True)
-            # Usunięto use_container_width=True
-            st.image("style_thumb_natural.jpg.jpeg") 
-            st.markdown("</div>", unsafe_allow_html=True)
-        # Użycie własnego HTML zamiast st.caption
-        st.markdown('<p class="thumb-caption">Natural</p>', unsafe_allow_html=True)
+            # Otwieramy kontener flex
+            st.markdown('<div class="thumb-container">', unsafe_allow_html=True)
+            st.image("style_thumb_natural.jpg.jpeg")
+            st.markdown('<p class="thumb-caption">Natural</p>', unsafe_allow_html=True)
+            # Zamykamy kontener flex
+            st.markdown('</div>', unsafe_allow_html=True)
 
     # 2. Light Neon
     with col_thumb2:
         if os.path.exists("style_thumb_light.jpg.jpeg"):
-            st.markdown('<div class="style-thumb">', unsafe_allow_html=True)
+            st.markdown('<div class="thumb-container">', unsafe_allow_html=True)
             st.image("style_thumb_light.jpg.jpeg")
-            st.markdown("</div>", unsafe_allow_html=True)
-        st.markdown('<p class="thumb-caption">Light Neon</p>', unsafe_allow_html=True)
+            st.markdown('<p class="thumb-caption">Light Neon</p>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
         
     # 3. Neon
     with col_thumb3:
         if os.path.exists("style_thumb_deep.jpg.jpeg"):
-            st.markdown('<div class="style-thumb">', unsafe_allow_html=True)
+            st.markdown('<div class="thumb-container">', unsafe_allow_html=True)
             st.image("style_thumb_deep.jpg.jpeg")
-            st.markdown("</div>", unsafe_allow_html=True)
-        st.markdown('<p class="thumb-caption">Neon</p>', unsafe_allow_html=True)
+            st.markdown('<p class="thumb-caption">Neon</p>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
     # Selection Logic
     style_mode = st.radio(
