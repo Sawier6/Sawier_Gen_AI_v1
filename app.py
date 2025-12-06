@@ -279,24 +279,8 @@ def increment_quota():
         if 'gen_count' not in st.session_state: st.session_state.gen_count = 0
         st.session_state.gen_count += 1
 
-# --- HIDDEN STYLE PROMPT ---
-# To jest ten tekst, którego user NIE widzi, a który definiuje styl.
-HIDDEN_STYLE = "visual_style": {
-    "mood": "cinematic, premium, night-time fashion vibe",
-    "color_palette": {
-      "primary": ["dark grey", "graphite", "matte black"],
-      "accents": ["bright orange glow", "neon orange highlights"],
-      "rules": "background stays desaturated in greyscale, only key elements or motion lines use orange light"
-    },
-    "lighting": {
-      "type": "soft directional cinematic light",
-      "accent_lights": "thin glowing orange strips, neon reflections, light trails",
-      "contrast": "high contrast between dark environment and bright orange effects"
-    },
-    "background": {
-      "style": "slightly blurred futuristic city or architectural setting",
-      "textures": "polished metal, wet pavement reflections, glass surfaces",
-      "motion": "optional subtle motion blur in environment or light trails"
+# --- HIDDEN STYLE PROMPT (Converted from your JSON) ---
+HIDDEN_STYLE = "Cinematic premium night-time fashion vibe. Color palette dominated by dark grey, graphite, and matte black, accented with bright orange glow and neon orange highlights. The background remains desaturated in greyscale, while key elements feature orange light. Lighting is soft directional cinematic with thin glowing orange strips, neon reflections, and light trails, creating high contrast against the dark environment. The background is a slightly blurred futuristic city or architectural setting featuring polished metal, wet pavement reflections, and glass surfaces."
 
 # --- EXECUTION ---
 if generate_btn:
@@ -315,15 +299,11 @@ if generate_btn:
                 try:
                     os.environ["FAL_KEY"] = api_key
                     
-                    # ŁĄCZENIE PROMPTU UŻYTKOWNIKA Z UKRYTYM STYLEM
+                    # ŁĄCZENIE PROMPTU Z TWOIM NOWYM STYLEM
                     final_prompt = f"{prompt}. {HIDDEN_STYLE}"
                     
-                    # LOGIC:
-                    # User: "playing chess"
-                    # AI sees: "playing chess. The environment is mostly dark graphite tones..."
-                    
                     arguments = {
-                        "prompt": final_prompt, # <--- Tu wysyłamy połączony tekst
+                        "prompt": final_prompt,
                         "num_inference_steps": 4,     
                         "guidance_scale": 0,          
                         "resolution": "2K",           
