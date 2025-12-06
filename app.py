@@ -75,7 +75,7 @@ st.markdown("""
     
     /* 4. IMAGES */
     .logo-container {
-        max-width: 140px; /* Rozmiar logo na głównej stronie */
+        max-width: 140px;
         width: 100%;
         margin-bottom: 15px;
     }
@@ -107,6 +107,21 @@ st.markdown("""
         font-size: 0.8em;
         margin-top: -10px;
         margin-bottom: 20px;
+    }
+    
+    /* 6. CUSTOM SUCCESS BANNER (NOWOŚĆ V25) */
+    .success-banner {
+        background-color: rgba(250, 102, 15, 0.15); /* Przezroczysty pomarańcz */
+        border: 1px solid #fa660f;
+        color: #fa660f;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        font-weight: 700;
+        margin-top: 20px;
+        margin-bottom: 10px;
+        width: 100%;
+        box-sizing: border-box; /* Gwarancja responsywności */
     }
     </style>
 """, unsafe_allow_html=True)
@@ -208,13 +223,10 @@ with st.sidebar:
         st.rerun()
 
 # --- HEADER AREA ---
-
-# 1. STRATEGY LOGO (TERAZ WIDOCZNE NA GÓRZE STRONY GŁÓWNEJ)
 logo_svg = process_svg_logo("strategy_logo_black.svg", "#fa660f")
 if logo_svg:
     st.markdown(f'<div class="logo-container">{logo_svg}</div>', unsafe_allow_html=True)
 
-# 2. MAXI HEADER (IKONA + TYTUŁ)
 col_head_img, col_head_txt = st.columns([1, 6])
 with col_head_img:
     if os.path.exists("maxi_head.png"):
@@ -300,7 +312,11 @@ if generate_btn:
         elif not mascot_refs:
             st.error("Admin Error: No mascot refs.")
         else:
-            with st.status("✨ Working on our strategic AI magic... Please wait.", expanded=True) as status:
+            # 1. TWORZYMY PUSTY KONTENER NA STATUS
+            status_container = st.empty()
+            
+            # Używamy kontenera do wyświetlenia statusu
+            with status_container.status("✨ Working on our strategic AI magic... Please wait.", expanded=True):
                 try:
                     os.environ["FAL_KEY"] = api_key
                     if use_style:
@@ -320,17 +336,27 @@ if generate_btn:
 
                     handler = fal_client.submit("fal-ai/nano-banana-pro/edit", arguments=arguments)
                     result = handler.get()
-                    status.update(label="✨ Strategic Magic Delivered!", state="complete", expanded=False)
+                    
+                    # Po sukcesie nie aktualizujemy statusu, tylko go czyścimy
+                    # status.update(...) <- TO USUWAMY
                     increment_quota() 
                 except Exception as e:
-                    status.update(label="Error", state="error")
                     st.error(f"Details: {e}")
                     result = None
 
+            # 2. CZYSZCZENIE KONTENERA (Status znika całkowicie)
+            status_container.empty()
+
             if result and 'images' in result:
                 img_url = result['images'][0]['url']
+                
+                # 3. WYŚWIETLANIE CUSTOMOWEGO BANERA SUKCESU (Zamiast statusu)
+                st.markdown('<div class="success-banner">✨ Strategic Magic Delivered!</div>', unsafe_allow_html=True)
+                
                 st.markdown(f'<div class="result-image-container"><img src="{img_url}"></div>', unsafe_allow_html=True)
+                
                 st.warning("⚠️ **Note:** If you like this result, please download it now. It will be overwritten when you generate a new image.")
+                
                 try:
                     response = requests.get(img_url)
                     response.raise_for_status()
