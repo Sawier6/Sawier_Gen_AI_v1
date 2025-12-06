@@ -299,7 +299,7 @@ def increment_quota():
         st.session_state.gen_count += 1
 
 # --- HIDDEN STYLE PROMPT ---
-HIDDEN_STYLE = "Cinematic premium night-time fashion vibe. Color palette dominated by dark grey, graphite, and matte black, accented with bright orange glow and neon orange highlights. The background remains desaturated in greyscale, while key elements feature orange light. Lighting is soft directional cinematic with thin glowing orange strips, neon reflections, and light trails, creating high contrast against the dark environment. The background is a slightly blurred futuristic city or architectural setting featuring polished metal, wet pavement reflections, and glass surfaces."
+HIDDEN_STYLE = "Visual style defined by high contrast dark-mode aesthetic. Shadows, midtones, and blacks are strictly desaturated, rendered in deep graphite, matte charcoal, and cool grey tones. Highlights and light sources are exclusively vibrant neon orange with a soft blooming glow. Lighting is cinematic and dramatic, featuring occasional natural orange lens flares. The overall color grading creates a duotone effect: monochrome darks versus glowing orange lights, maintaining a premium, sleek, and moody atmosphere regardless of the setting."
 
 # --- EXECUTION ---
 if generate_btn:
