@@ -102,8 +102,14 @@ st.markdown("""
         box-shadow: 0 10px 40px rgba(0,0,0,0.3);
     }
     
-    /* STYL DLA MINIATUREK STYLI */
+    /* --- STYL DLA MINIATUREK STYLI (V34 FIX) --- */
+    .style-thumb {
+        text-align: center; /* Wyśrodkowanie kontenera */
+        margin-bottom: 5px;
+    }
     .style-thumb img {
+        width: 130px !important; /* SZTYWNA SZEROKOŚĆ */
+        height: auto !important;
         border-radius: 12px !important;
         border: 2px solid #333 !important;
         transition: all 0.2s ease;
@@ -111,11 +117,15 @@ st.markdown("""
     .style-thumb img:hover {
         border-color: #fa660f !important;
     }
-    [data-testid="stImage"] + div {
+    
+    /* NOWY STYL DLA PODPISÓW (BLISKO OBRAZKA) */
+    .thumb-caption {
         text-align: center !important;
         font-size: 0.85em !important;
         color: #cccccc !important;
-        margin-top: 5px !important;
+        margin-top: -5px !important; /* Ujemny margines podciąga tekst do góry */
+        margin-bottom: 15px !important;
+        line-height: 1.2 !important;
     }
     
     .limit-info {
@@ -270,34 +280,36 @@ with st.container():
 
     st.markdown("<br>", unsafe_allow_html=True) 
 
-    # --- VISUAL STYLE THUMBNAILS (FIXED NAMES) ---
+    # --- VISUAL STYLE THUMBNAILS (V34 Fix: Small size & tight spacing) ---
     st.markdown("**Visual Style**")
     
     col_thumb1, col_thumb2, col_thumb3 = st.columns(3)
     
-    # 1. Natural (Fixed .jpg.jpeg)
+    # 1. Natural
     with col_thumb1:
         if os.path.exists("style_thumb_natural.jpg.jpeg"):
             st.markdown('<div class="style-thumb">', unsafe_allow_html=True)
-            st.image("style_thumb_natural.jpg.jpeg", use_container_width=True)
+            # Usunięto use_container_width=True
+            st.image("style_thumb_natural.jpg.jpeg") 
             st.markdown("</div>", unsafe_allow_html=True)
-        st.caption("Natural")
+        # Użycie własnego HTML zamiast st.caption
+        st.markdown('<p class="thumb-caption">Natural</p>', unsafe_allow_html=True)
 
-    # 2. Light Neon (Fixed .jpg.jpeg)
+    # 2. Light Neon
     with col_thumb2:
         if os.path.exists("style_thumb_light.jpg.jpeg"):
             st.markdown('<div class="style-thumb">', unsafe_allow_html=True)
-            st.image("style_thumb_light.jpg.jpeg", use_container_width=True)
+            st.image("style_thumb_light.jpg.jpeg")
             st.markdown("</div>", unsafe_allow_html=True)
-        st.caption("Light Neon")
+        st.markdown('<p class="thumb-caption">Light Neon</p>', unsafe_allow_html=True)
         
-    # 3. Deep Neon (Fixed .jpg.jpeg)
+    # 3. Neon
     with col_thumb3:
         if os.path.exists("style_thumb_deep.jpg.jpeg"):
             st.markdown('<div class="style-thumb">', unsafe_allow_html=True)
-            st.image("style_thumb_deep.jpg.jpeg", use_container_width=True)
+            st.image("style_thumb_deep.jpg.jpeg")
             st.markdown("</div>", unsafe_allow_html=True)
-        st.caption("Neon") # CHANGED TO "Neon"
+        st.markdown('<p class="thumb-caption">Neon</p>', unsafe_allow_html=True)
 
     # Selection Logic
     style_mode = st.radio(
