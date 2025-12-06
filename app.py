@@ -281,8 +281,7 @@ def increment_quota():
 
 # --- HIDDEN STYLE PROMPT ---
 # To jest ten tekst, którego user NIE widzi, a który definiuje styl.
-HIDDEN_STYLE = "{
-  "visual_style": {
+HIDDEN_STYLE = "visual_style": {
     "mood": "cinematic, premium, night-time fashion vibe",
     "color_palette": {
       "primary": ["dark grey", "graphite", "matte black"],
@@ -298,8 +297,6 @@ HIDDEN_STYLE = "{
       "style": "slightly blurred futuristic city or architectural setting",
       "textures": "polished metal, wet pavement reflections, glass surfaces",
       "motion": "optional subtle motion blur in environment or light trails"
-    }
-  },"
 
 # --- EXECUTION ---
 if generate_btn:
