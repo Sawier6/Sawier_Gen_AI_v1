@@ -20,10 +20,8 @@ st.set_page_config(
 # --- CSS (Styling, FONTS & GHOST MODE) ---
 st.markdown("""
     <style>
-    /* 1. IMPORT CZCIONKI INTER */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
 
-    /* 2. GLOBALNE USTAWIENIA TEKSTU */
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
         color: #ffffff;
@@ -34,14 +32,13 @@ st.markdown("""
         font-weight: 500;
     }
 
-    /* 3. TYTUŁY H1 */
     h1 {
         color: #fa660f !important;
         font-family: 'Inter', sans-serif !important;
         font-weight: 700 !important;
     }
     
-    /* 4. GHOST MODE (Ukrywanie Streamlit) */
+    /* GHOST MODE */
     [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
     [data-testid="stHeader"] {visibility: hidden !important; display: none !important;}
     [data-testid="stDecoration"] {visibility: hidden !important; display: none !important;}
@@ -53,7 +50,7 @@ st.markdown("""
         padding-top: 2rem !important;
     }
 
-    /* 5. PRZYCISKI */
+    /* BUTTONS */
     .stButton>button {
         background-color: #fa660f;
         color: white;
@@ -69,7 +66,7 @@ st.markdown("""
         transform: scale(1.02);
     }
     
-    /* 6. LOGO & OBRAZKI */
+    /* IMAGES */
     .logo-container {
         max-width: 180px;
         width: 100%;
@@ -148,7 +145,8 @@ def get_mascot_refs(folder_name="mascot"):
     encoded_files = [compress_and_encode_image(f) for f in files]
     return [f for f in encoded_files if f is not None]
 
-# --- AUTHENTICATION ---
+# --- SIMPLE AUTHENTICATION (TWO PASSWORDS) ---
+
 ADMIN_PASS = st.secrets.get("ADMIN_PASSWORD", "")
 TEAM_PASS = st.secrets.get("TEAM_PASSWORD", "")
 
@@ -160,10 +158,18 @@ def check_password():
     if st.session_state.authenticated:
         return True
 
-    col1, col2, col3 = st.columns([1,2,1])
+    col1, col2, col3 = st.columns([1,1,1])
     with col2:
-        st.info("🔒 Login Required")
-        input_pass = st.text_input("Password:", type="password")
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        
+        # Logo in Login
+        logo_svg = process_svg_logo("strategy_logo_black.svg", "#fa660f")
+        if logo_svg:
+            st.markdown(f'<div class="logo-container" style="margin: 0 auto 20px auto;">{logo_svg}</div>', unsafe_allow_html=True)
+        else:
+            st.header("Login")
+
+        input_pass = st.text_input("Enter Access Password:", type="password")
         
         if input_pass:
             if input_pass == ADMIN_PASS:
@@ -184,10 +190,17 @@ if not check_password():
 
 # --- SIDEBAR ---
 with st.sidebar:
+    # Role Display
     if st.session_state.role == 'admin':
-        st.success("Logged as: **Super Admin**")
+        st.success("Role: **Super Admin (Unlimited)**")
     else:
-        st.info("Logged as: **Team Member**")
+        st.info("Role: **Team Member**")
+        
+    # Logout
+    if st.button("Log out"):
+        st.session_state.authenticated = False
+        st.session_state.role = None
+        st.rerun()
 
     logo_svg = process_svg_logo("strategy_logo_black.svg", "#fa660f")
     if logo_svg:
@@ -197,13 +210,10 @@ with st.sidebar:
 
     st.divider()
     
-    # --- ONLY MAXI SETTINGS NOW ---
     st.markdown("**Settings**")
     
-    # Aspect Ratio Selection
     ratio_alias = st.radio("Aspect Ratio", ["9:16", "1:1", "16:9"], index=2)
     
-    # Ratio Logic
     if ratio_alias == "9:16":
         selected_ratio_val = "9:16"    
     elif ratio_alias == "1:1":
@@ -211,7 +221,6 @@ with st.sidebar:
     else: 
         selected_ratio_val = "16:9"
     
-    # Loading references silently
     mascot_refs = get_mascot_refs()
     if not mascot_refs:
          st.error("⚠️ Error: No images in '/mascot' folder.")
@@ -226,7 +235,6 @@ with col_head_img:
         st.write("🦡") 
 with col_head_txt:
     st.title("Maxi Generator")
-    # Limit info for team members
     if st.session_state.role != 'admin':
         st.markdown('<div class="limit-info">⚡ Team Access: Limited to 5 generations per hour.</div>', unsafe_allow_html=True)
 
@@ -283,18 +291,16 @@ if generate_btn:
                 try:
                     os.environ["FAL_KEY"] = api_key
                     
-                    # HARDCODED MAXI CONFIGURATION
                     arguments = {
                         "prompt": prompt,
-                        "num_inference_steps": 4,     # Nano constraint
-                        "guidance_scale": 0,          # Nano constraint
-                        "resolution": "2K",           # High Quality
+                        "num_inference_steps": 4,     
+                        "guidance_scale": 0,          
+                        "resolution": "2K",           
                         "aspect_ratio": selected_ratio_val,
                         "image_urls": mascot_refs,
                         "safety_tolerance": "2"
                     }
 
-                    # Sending to Nano Banana Pro Edit
                     handler = fal_client.submit("fal-ai/nano-banana-pro/edit", arguments=arguments)
                     result = handler.get()
                     
