@@ -66,7 +66,7 @@ st.markdown("""
         transform: scale(1.02);
     }
     
-    /* IMAGES */
+    /* IMAGES (LOGO) */
     .logo-container {
         max-width: 180px;
         width: 100%;
@@ -77,17 +77,29 @@ st.markdown("""
         height: auto !important;
         display: block;
     }
+
+    /* --- RESULT IMAGE FIX (V16.0) --- */
     .result-image-container {
         display: flex;
         justify-content: center;
+        align-items: center;
         margin: 20px 0;
+        width: 100%;
     }
     .result-image-container img {
-        max-width: 850px;
-        width: 100%;
-        height: auto;
-        border-radius: 12px;
-        box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+        /* Kluczowa zmiana: Ograniczenie wysokości */
+        max-height: 650px !important; 
+        
+        /* Ograniczenie szerokości (żeby nie rozepchało na małych ekranach) */
+        max-width: 100% !important;
+        
+        /* Zachowanie proporcji */
+        width: auto !important;
+        height: auto !important;
+        
+        /* Stylizacja rogów i cienia */
+        border-radius: 30px !important;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
     }
     
     .limit-info {
@@ -315,6 +327,7 @@ if generate_btn:
             if result and 'images' in result:
                 img_url = result['images'][0]['url']
                 
+                # WYŚWIETLANIE Z NOWYM STYLEM (CSS ogranicza wysokość do 650px)
                 st.markdown(f'<div class="result-image-container"><img src="{img_url}"></div>', unsafe_allow_html=True)
                 
                 st.warning("⚠️ **Note:** If you like this result, please download it now. It will be overwritten when you generate a new image.")
