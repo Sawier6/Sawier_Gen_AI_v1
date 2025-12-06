@@ -22,19 +22,28 @@ st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
 
+    /* 1. NUCLEAR FONT FIX - WYMUSZENIE INTER WSZĘDZIE */
+    * {
+        font-family: 'Inter', sans-serif !important;
+    }
+    
+    /* Specjalne traktowanie dla pól tekstowych (input, textarea), żeby też miały Inter */
+    input, textarea, [data-baseweb="select"] {
+        font-family: 'Inter', sans-serif !important;
+    }
+
     html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
         color: #ffffff;
         font-weight: 400;
     }
     
-    label, .stMarkdown p, .stCaption {
-        font-weight: 500;
+    /* Wagi czcionek */
+    label, .stMarkdown p, .stCaption, .limit-info {
+        font-weight: 500 !important;
     }
 
-    h1 {
+    h1, h2, h3 {
         color: #fa660f !important;
-        font-family: 'Inter', sans-serif !important;
         font-weight: 700 !important;
     }
     
@@ -56,7 +65,7 @@ st.markdown("""
         color: white;
         border-radius: 8px;
         height: 3.5em;
-        font-weight: bold;
+        font-weight: bold !important;
         border: none;
         transition: all 0.3s ease;
     }
@@ -100,7 +109,6 @@ st.markdown("""
         font-size: 0.9em;
         margin-top: -15px;
         margin-bottom: 20px;
-        font-weight: 400;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -226,9 +234,13 @@ with st.sidebar:
     else: 
         selected_ratio_val = "16:9"
     
-    # --- NOWY PRZEŁĄCZNIK STYLU ---
-    st.markdown("<br>", unsafe_allow_html=True) # Odstęp
+    # --- TOGGLE WITH SMALL DESCRIPTION ---
+    st.markdown("<br>", unsafe_allow_html=True) 
     use_style = st.toggle("✨ Strategy Neon Style", value=True)
+    st.markdown(
+        '<div style="font-size: 12px; color: #aaaaaa; margin-top: -15px; margin-bottom: 20px; line-height: 1.2;">(Turn off for a more colorful and general style)</div>', 
+        unsafe_allow_html=True
+    )
     
     mascot_refs = get_mascot_refs()
     if not mascot_refs:
@@ -303,11 +315,10 @@ if generate_btn:
                 try:
                     os.environ["FAL_KEY"] = api_key
                     
-                    # --- LOGIKA PRZEŁĄCZNIKA ---
                     if use_style:
                         final_prompt = f"{prompt}. {HIDDEN_STYLE}"
                     else:
-                        final_prompt = prompt # Czysty prompt użytkownika
+                        final_prompt = prompt 
                     
                     arguments = {
                         "prompt": final_prompt,
